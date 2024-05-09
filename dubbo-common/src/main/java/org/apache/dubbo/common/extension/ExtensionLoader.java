@@ -442,6 +442,7 @@ public class ExtensionLoader<T> {
             synchronized (holder) {
                 instance = holder.get();
                 if (instance == null) {
+                    // xjh-创建实例
                     instance = createExtension(name, wrap);
                     holder.set(instance);
                 }
@@ -652,6 +653,7 @@ public class ExtensionLoader<T> {
 
     @SuppressWarnings("unchecked")
     private T createExtension(String name, boolean wrap) {
+        // xjh-加载配置文件，并从配置文件中加载所有的拓展类，可得到“配置项名称”到“配置类”的映射关系表
         Class<?> clazz = getExtensionClasses().get(name);
         if (clazz == null || unacceptableExceptions.contains(name)) {
             throw findException(name);
@@ -659,9 +661,11 @@ public class ExtensionLoader<T> {
         try {
             T instance = (T) EXTENSION_INSTANCES.get(clazz);
             if (instance == null) {
+                // xjh-通过反射创建实例并放入缓存
                 EXTENSION_INSTANCES.putIfAbsent(clazz, clazz.getDeclaredConstructor().newInstance());
                 instance = (T) EXTENSION_INSTANCES.get(clazz);
             }
+            // xjh-向实例中注入依赖
             injectExtension(instance);
 
 
@@ -675,10 +679,13 @@ public class ExtensionLoader<T> {
                 }
 
                 if (CollectionUtils.isNotEmpty(wrapperClassesList)) {
+                    // xjh-循环创建 Wrapper 实例
                     for (Class<?> wrapperClass : wrapperClassesList) {
                         Wrapper wrapper = wrapperClass.getAnnotation(Wrapper.class);
                         if (wrapper == null
                                 || (ArrayUtils.contains(wrapper.matches(), name) && !ArrayUtils.contains(wrapper.mismatches(), name))) {
+                            // xjh-将当前 instance 作为参数传给 Wrapper 的构造方法，并通过反射创建 Wrapper 实例。
+                            // 然后向 Wrapper 实例中注入依赖，最后将 Wrapper 实例再次赋值给 instance 变量
                             instance = injectExtension((T) wrapperClass.getConstructor(type).newInstance(instance));
                         }
                     }
@@ -704,6 +711,7 @@ public class ExtensionLoader<T> {
         }
 
         try {
+            // xjh-遍历实例的所有方法
             for (Method method : instance.getClass().getMethods()) {
                 if (!isSetter(method)) {
                     continue;
@@ -726,7 +734,9 @@ public class ExtensionLoader<T> {
                  * {@link Inject#enable} == false will skip inject property phase
                  * {@link Inject#InjectType#ByName} default inject by name
                  */
+                // xjh-获取setter方法
                 String property = getSetterProperty(method);
+                // xjh-使用了Inject注解，则自动注入
                 Inject inject = method.getAnnotation(Inject.class);
                 if (inject == null) {
                     injectValue(instance, method, pt, property);
@@ -750,8 +760,10 @@ public class ExtensionLoader<T> {
 
     private void injectValue(T instance, Method method, Class<?> pt, String property) {
         try {
+            // xjh-从objectFactory中获取被依赖对象
             Object object = objectFactory.getExtension(pt, property);
             if (object != null) {
+                // xjh-调用setter方法，注入依赖对象
                 method.invoke(instance, object);
             }
         } catch (Exception e) {
@@ -802,11 +814,13 @@ public class ExtensionLoader<T> {
     }
 
     private Map<String, Class<?>> getExtensionClasses() {
+        // xjh-从缓存中获取已加载的拓展类
         Map<String, Class<?>> classes = cachedClasses.get();
         if (classes == null) {
             synchronized (cachedClasses) {
                 classes = cachedClasses.get();
                 if (classes == null) {
+                    // xjh-加载拓展类
                     classes = loadExtensionClasses();
                     cachedClasses.set(classes);
                 }
@@ -819,10 +833,12 @@ public class ExtensionLoader<T> {
      * synchronized in getExtensionClasses
      */
     private Map<String, Class<?>> loadExtensionClasses() {
+        // xjh-加载默认扩展名
         cacheDefaultExtensionName();
 
         Map<String, Class<?>> extensionClasses = new HashMap<>();
 
+        // xjh-加载指定文件夹下的配置文件，并根据配置文件内容加载指定类，方便我们后面实例化类
         for (LoadingStrategy strategy : strategies) {
             loadDirectory(extensionClasses, strategy.directory(), type.getName(), strategy.preferExtensionClassLoader(),
                     strategy.overridden(), strategy.excludedPackages());
@@ -837,6 +853,7 @@ public class ExtensionLoader<T> {
      * extract and cache default extension name if exists
      */
     private void cacheDefaultExtensionName() {
+        // xjh-获取 SPI 注解，这里的 type 变量是在调用 getExtensionLoader 方法时传入的，即我们例子中的Robot接口
         final SPI defaultAnnotation = type.getAnnotation(SPI.class);
         if (defaultAnnotation == null) {
             return;
@@ -844,6 +861,7 @@ public class ExtensionLoader<T> {
 
         String value = defaultAnnotation.value();
         if ((value = value.trim()).length() > 0) {
+            // xjh-对 SPI 注解的value进行切分，Robot例子中，value为空字符串
             String[] names = NAME_SEPARATOR.split(value);
             if (names.length > 1) {
                 throw new IllegalStateException("More than 1 default extension name on extension " + type.getName()
@@ -861,6 +879,7 @@ public class ExtensionLoader<T> {
 
     private void loadDirectory(Map<String, Class<?>> extensionClasses, String dir, String type,
                                boolean extensionLoaderClassLoaderFirst, boolean overridden, String... excludedPackages) {
+        // xjh-fileName等于路径加类型，所以我们META-INFO下面的配置文件名也是SPI接口的全路径名
         String fileName = dir + type;
         try {
             Enumeration<java.net.URL> urls = null;
@@ -876,6 +895,7 @@ public class ExtensionLoader<T> {
 
             if (urls == null || !urls.hasMoreElements()) {
                 if (classLoader != null) {
+                    // xjh-根据文件名加载所有的同名资源链接
                     urls = classLoader.getResources(fileName);
                 } else {
                     urls = ClassLoader.getSystemResources(fileName);
@@ -885,6 +905,7 @@ public class ExtensionLoader<T> {
             if (urls != null) {
                 while (urls.hasMoreElements()) {
                     java.net.URL resourceURL = urls.nextElement();
+                    // xjh-通过前面获取的资源链接加载资源，此处的资源就是我们的配置文件，即这一步加载了配置文件
                     loadResource(extensionClasses, classLoader, resourceURL, overridden, excludedPackages);
                 }
             }
@@ -917,6 +938,7 @@ public class ExtensionLoader<T> {
                                 clazz = line;
                             }
                             if (StringUtils.isNotEmpty(clazz) && !isExcluded(clazz, excludedPackages)) {
+                                // xjh-加载配置文件中指定的类型
                                 loadClass(extensionClasses, resourceURL, Class.forName(clazz, true, classLoader), name, overridden);
                             }
                         } catch (Throwable t) {
@@ -971,6 +993,7 @@ public class ExtensionLoader<T> {
                 cacheActivateClass(clazz, names[0]);
                 for (String n : names) {
                     cacheName(clazz, n);
+                    // xjh-将加载的类保存在缓存中
                     saveInExtensionClass(extensionClasses, clazz, n, overridden);
                 }
             }
