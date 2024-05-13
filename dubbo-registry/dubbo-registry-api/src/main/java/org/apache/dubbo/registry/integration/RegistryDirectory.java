@@ -81,6 +81,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
 
     // Map<url, Invoker> cache service url to invoker mapping.
     // The initial value is null and the midway may be assigned to null, please use the local variable reference
+    // xjh-本地invoker缓存
     protected volatile Map<URL, Invoker<T>> urlInvokerMap;
     // The initial value is null and the midway may be assigned to null, please use the local variable reference
     protected volatile Set<URL> cachedInvokerUrls;
@@ -107,6 +108,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
 
     @Override
     public synchronized void notify(List<URL> urls) {
+        // xjh-将url分成三组：configurators/routers/providers
         Map<String, List<URL>> categoryUrls = urls.stream()
                 .filter(Objects::nonNull)
                 .filter(this::isValidCategory)
@@ -114,9 +116,11 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
                 .collect(Collectors.groupingBy(this::judgeCategory));
 
         List<URL> configuratorURLs = categoryUrls.getOrDefault(CONFIGURATORS_CATEGORY, Collections.emptyList());
+        // xjh-将url变更为Configurator
         this.configurators = Configurator.toConfigurators(configuratorURLs).orElse(this.configurators);
 
         List<URL> routerURLs = categoryUrls.getOrDefault(ROUTERS_CATEGORY, Collections.emptyList());
+        // xjh-将url变更为route并放入到routeChain中，注意，每一种route，一个service只会生成一个route实例
         toRouters(routerURLs).ifPresent(this::addRouters);
 
         // providers
@@ -128,9 +132,11 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
         List<AddressListener> supportedListeners = addressListenerExtensionLoader.getActivateExtension(getUrl(), (String[]) null);
         if (supportedListeners != null && !supportedListeners.isEmpty()) {
             for (AddressListener addressListener : supportedListeners) {
+                // xjh-通知addressListener
                 providerURLs = addressListener.notify(providerURLs, getConsumerUrl(), this);
             }
         }
+        // xjh-重点，刷新变动的providerURLs
         refreshOverrideAndInvoker(providerURLs);
     }
 
@@ -149,6 +155,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
     private synchronized void refreshOverrideAndInvoker(List<URL> urls) {
         // mock zookeeper://xxx?mock=return null
         overrideDirectoryUrl();
+        // xjh-重点，刷新provider
         refreshInvoker(urls);
     }
 
@@ -167,6 +174,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
     private void refreshInvoker(List<URL> invokerUrls) {
         Assert.notNull(invokerUrls, "invokerUrls should not be null");
 
+        // xjh-如果invokeUrl只有一个，且协议还是空，则将forbidden变为true，销毁所有invokers。相当于程序关闭
         if (invokerUrls.size() == 1
                 && invokerUrls.get(0) != null
                 && EMPTY_PROTOCOL.equals(invokerUrls.get(0).getProtocol())) {
@@ -180,15 +188,18 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
                 invokerUrls = new ArrayList<>();
             }
             if (invokerUrls.isEmpty() && this.cachedInvokerUrls != null) {
+                // xjh-如果新来的urls为空，则将本地的url一并加入新来的url
                 invokerUrls.addAll(this.cachedInvokerUrls);
             } else {
                 this.cachedInvokerUrls = new HashSet<>();
+                // xjh-如果新来的urls不为空，则将新来的url加入本地缓存
                 this.cachedInvokerUrls.addAll(invokerUrls);//Cached invoker urls, convenient for comparison
             }
             if (invokerUrls.isEmpty()) {
                 return;
             }
             this.forbidden = false; // Allow to access
+            // xjh-将新来的url转换为invoker
             Map<URL, Invoker<T>> newUrlInvokerMap = toInvokers(invokerUrls);// Translate url list to Invoker map
 
             /**
@@ -208,15 +219,20 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
             List<Invoker<T>> newInvokers = Collections.unmodifiableList(new ArrayList<>(newUrlInvokerMap.values()));
             // pre-route and build cache, notice that route cache should build on original Invoker list.
             // toMergeMethodInvokerMap() will wrap some invokers having different groups, those wrapped invokers not should be routed.
+            // xjh-注意下面的三个缓存。doList中要用到。
+            // xjh-将新建的invoker加入routeChina
             routerChain.setInvokers(newInvokers);
+            // xjh-将新建的invoker merge后放入缓存
             this.invokers = multiGroup ? toMergeInvokerList(newInvokers) : newInvokers;
             this.urlInvokerMap = newUrlInvokerMap;
 
+            // xjh-销毁无用的invoker，传入了新的与老的urlInvoker。即销毁老的有，而新的中没有的invoker。即每次的notify，都是提供当前所有有效的providerUrl。
             // Close the unused Invoker
             destroyUnusedInvokers(oldUrlInvokerMap, newUrlInvokerMap);
 
         }
 
+        // xjh-通知invoker更新了
         // notify invokers refreshed
         this.invokersChanged();
     }
@@ -283,18 +299,21 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
             return newUrlInvokerMap;
         }
         Set<URL> keys = new HashSet<>();
+        // xjh-获取消费端配置的协议
         String queryProtocols = this.queryMap.get(PROTOCOL_KEY);
         for (URL providerUrl : urls) {
             // If protocol is configured at the reference side, only the matching protocol is selected
             if (queryProtocols != null && queryProtocols.length() > 0) {
                 boolean accept = false;
                 String[] acceptProtocols = queryProtocols.split(",");
+                // xjh-检测服务提供者与消费者的协议是否匹配
                 for (String acceptProtocol : acceptProtocols) {
                     if (providerUrl.getProtocol().equals(acceptProtocol)) {
                         accept = true;
                         break;
                     }
                 }
+                // xjh-若消费者与服务提供者协议不匹配，则跳过当前url
                 if (!accept) {
                     continue;
                 }
@@ -302,6 +321,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
             if (EMPTY_PROTOCOL.equals(providerUrl.getProtocol())) {
                 continue;
             }
+            // xjh-通过spi机制根据provider的协议加载相关协议类
             if (!ExtensionLoader.getExtensionLoader(Protocol.class).hasExtension(providerUrl.getProtocol())) {
                 logger.error(new IllegalStateException("Unsupported protocol " + providerUrl.getProtocol() +
                         " in notified url: " + providerUrl + " from registry " + getUrl().getAddress() +
@@ -309,6 +329,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
                         ExtensionLoader.getExtensionLoader(Protocol.class).getSupportedExtensions()));
                 continue;
             }
+            // xjh-合并url
             URL url = mergeUrl(providerUrl);
 
             if (keys.contains(url)) { // Repeated url
@@ -317,6 +338,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
             keys.add(url);
             // Cache key is url that does not merge with consumer side parameters, regardless of how the consumer combines parameters, if the server url changes, then refer again
             Map<URL, Invoker<T>> localUrlInvokerMap = this.urlInvokerMap; // local reference
+            // xjh-从本地缓存中根据url取invoker，如果invoker为空则新建
             Invoker<T> invoker = localUrlInvokerMap == null ? null : localUrlInvokerMap.get(url);
             if (invoker == null) { // Not in the cache, refer again
                 try {
@@ -327,6 +349,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
                         enabled = url.getParameter(ENABLED_KEY, true);
                     }
                     if (enabled) {
+                        // xjh-根据protocol与url新建invokerDelegate（内部包含了Invoker）
                         invoker = new InvokerDelegate<>(protocol.refer(serviceType, url), url, providerUrl);
                     }
                 } catch (Throwable t) {
@@ -440,6 +463,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
         // check deleted invoker
         if (oldUrlInvokerMap != null) {
             for (URL key : oldUrlInvokerMap.keySet()) {
+                // xjh-如果老的invoker在新的invokerMap中没有出现，则销毁老的invoker
                 if (null != key && !newUrlInvokerMap.containsKey(key)) {
                     Invoker<T> invoker = oldUrlInvokerMap.get(key);
                     if (invoker != null) {

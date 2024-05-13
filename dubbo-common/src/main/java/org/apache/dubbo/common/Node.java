@@ -23,6 +23,7 @@ public interface Node {
 
     /**
      * get url.
+     * xjh-实现此接口的类可以通过此方法向外提供配置信息。
      *
      * @return url.
      */

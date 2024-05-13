@@ -23,6 +23,8 @@ import java.util.List;
 
 /**
  * NotifyListener. (API, Prototype, ThreadSafe)
+ * xjh-当注册中心节点信息发生变更时，通过此接口可以获取通知并获取变更信息。
+ * RegistryDirectory实现了此接口
  *
  * @see org.apache.dubbo.registry.RegistryService#subscribe(URL, NotifyListener)
  */

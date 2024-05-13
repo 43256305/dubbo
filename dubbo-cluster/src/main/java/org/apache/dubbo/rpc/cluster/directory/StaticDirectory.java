@@ -102,6 +102,7 @@ public class StaticDirectory<T> extends AbstractDirectory<T> {
         List<Invoker<T>> finalInvokers = invokers;
         if (routerChain != null) {
             try {
+                // xjh-根据consumerUrl获取invoker
                 finalInvokers = routerChain.route(getConsumerUrl(), invocation);
             } catch (Throwable t) {
                 logger.error("Failed to execute router: " + getUrl() + ", cause: " + t.getMessage(), t);

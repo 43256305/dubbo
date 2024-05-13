@@ -42,6 +42,7 @@ public interface Directory<T> extends Node {
 
     /**
      * list invokers.
+     * xjh-关键方法，列出invoker
      *
      * @return invokers
      */
