@@ -78,10 +78,12 @@ public class ConditionRouter extends AbstractRouter {
 
     public ConditionRouter(URL url) {
         this.url = url;
+        // xjh-获取priority与force配置
         this.priority = url.getParameter(PRIORITY_KEY, 0);
         this.force = url.getParameter(FORCE_KEY, false);
         this.enabled = url.getParameter(ENABLED_KEY, true);
         if (enabled) {
+            // xjh-获取路由规则
             init(url.getParameterAndDecoded(RULE_KEY));
         }
     }
@@ -93,9 +95,12 @@ public class ConditionRouter extends AbstractRouter {
             }
             rule = rule.replace("consumer.", "").replace("provider.", "");
             int i = rule.indexOf("=>");
+            // xjh-分别获取服务消费者和提供者匹配规则
             String whenRule = i < 0 ? null : rule.substring(0, i).trim();
             String thenRule = i < 0 ? rule.trim() : rule.substring(i + 2).trim();
+            // xjh-解析服务消费者匹配规则
             Map<String, MatchPair> when = StringUtils.isBlank(whenRule) || "true".equals(whenRule) ? new HashMap<String, MatchPair>() : parseRule(whenRule);
+            // xjh-解析服务提供者匹配规则
             Map<String, MatchPair> then = StringUtils.isBlank(thenRule) || "false".equals(thenRule) ? null : parseRule(thenRule);
             // NOTE: It should be determined on the business level whether the `When condition` can be empty or not.
             this.whenCondition = when;
@@ -115,6 +120,7 @@ public class ConditionRouter extends AbstractRouter {
         MatchPair pair = null;
         // Multiple values
         Set<String> values = null;
+        // xjh-通过正则表达式匹配。详细匹配规则查看：https://cn.dubbo.apache.org/zh-cn/docsv2.7/dev/source/router/
         final Matcher matcher = ROUTE_PATTERN.matcher(rule);
         while (matcher.find()) { // Try to match one by one
             String separator = matcher.group(1);
@@ -186,19 +192,23 @@ public class ConditionRouter extends AbstractRouter {
             return invokers;
         }
         try {
+            // xjh-服务消费者匹配，不匹配则直接返回invoker即可
             if (!matchWhen(url, invocation)) {
                 return invokers;
             }
             List<Invoker<T>> result = new ArrayList<Invoker<T>>();
+            // xjh-服务提供者匹配条件未配置，表明对指定的服务消费者禁用服务，也就是服务消费者在黑名单中
             if (thenCondition == null) {
                 logger.warn("The current consumer in the service blacklist. consumer: " + NetUtils.getLocalHost() + ", service: " + url.getServiceKey());
                 return result;
             }
+            // xjh-服务消费者与提供者逐个匹配，匹配成功则加入result
             for (Invoker<T> invoker : invokers) {
                 if (matchThen(invoker.getUrl(), url)) {
                     result.add(invoker);
                 }
             }
+            // xjh-有匹配成功的invoker，则直接返回
             if (!result.isEmpty()) {
                 return result;
             } else if (force) {
