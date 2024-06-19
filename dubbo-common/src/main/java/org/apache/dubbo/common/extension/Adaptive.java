@@ -53,6 +53,10 @@ public @interface Adaptive {
      * dot '.', for example, for {@code org.apache.dubbo.xxx.YyyInvokerWrapper}, the generated name is
      * <code>String[] {"yyy.invoker.wrapper"}</code>.
      *
+     * xjh-spi机制依据此值来生成实现类。如果value={"key1", "key2"}，则url中出现了key1的参数则取key1，出现了key2没有key1，则取key2，两个都没有出现，则取默认@SPI默认值。
+     * 该注解可以用于接口的某个子类上，也可以用于接口方法上。如果用在接口的子类上，则表示Adaptive机制的实现会按照该子类的方式进行自定义实现；如果用在方法上，则表示Dubbo会为该接口自动生成一个子类，并且重写该方法，没有标注@Adaptive注解的方法将会默认抛出异常。
+     * 对于第一种Adaptive的使用方式，Dubbo里只有ExtensionFactory接口使用，AdaptiveExtensionFactory的实现就使用了@Adaptive注解进行了标注，主要作用就是在获取目标对象时，分别通过ExtensionLoader和Spring容器两种方式获取。
+     * 对于第二种使用方式，则是根据url的parameter或者protocol来获取实现类。
      * @return parameter names in URL
      */
     String[] value() default {};

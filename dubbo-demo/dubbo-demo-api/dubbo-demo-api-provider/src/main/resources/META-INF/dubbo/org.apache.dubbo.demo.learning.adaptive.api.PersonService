@@ -1,0 +1,3 @@
+# 前面的china与england为extName
+china=org.apache.dubbo.demo.learning.adaptive.impl.ChinaPersonServiceImpl
+england=org.apache.dubbo.demo.learning.adaptive.impl.EnglandPersonServiceImpl

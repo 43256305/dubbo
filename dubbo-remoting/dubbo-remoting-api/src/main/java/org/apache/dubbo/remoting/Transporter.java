@@ -33,6 +33,7 @@ public interface Transporter {
 
     /**
      * Bind a server.
+     * xjh-这里也使用了@Adaptive机制
      *
      * @param url     server url
      * @param handler

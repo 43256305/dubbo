@@ -88,10 +88,12 @@ public class AdaptiveClassCodeGenerator {
      */
     public String generate() {
         // no need to generate adaptive class since there's no adaptive method found.
+        // xjh-如果没有注解@Adaptive的方法，则抛出异常
         if (!hasAdaptiveMethod()) {
             throw new IllegalStateException("No adaptive method exist on extension " + type.getName() + ", refuse to create the adaptive class!");
         }
 
+        // xjh-拼接包名 类名 方法等
         StringBuilder code = new StringBuilder();
         code.append(generatePackageInfo());
         code.append(generateImports());
@@ -99,8 +101,10 @@ public class AdaptiveClassCodeGenerator {
 
         Method[] methods = type.getMethods();
         for (Method method : methods) {
+            // xjh-重点，根据@Adaptive注解，生成方法体
             code.append(generateMethod(method));
         }
+        // xjh-类结束括号
         code.append("}");
 
         if (logger.isDebugEnabled()) {
@@ -158,6 +162,7 @@ public class AdaptiveClassCodeGenerator {
     private String generateMethod(Method method) {
         String methodReturnType = method.getReturnType().getCanonicalName();
         String methodName = method.getName();
+        // xjh-重点，根据@Adaptive注解，生成方法体
         String methodContent = generateMethodContent(method);
         String methodArgs = generateMethodArguments(method);
         String methodThrows = generateMethodThrows(method);
@@ -201,8 +206,10 @@ public class AdaptiveClassCodeGenerator {
         Adaptive adaptiveAnnotation = method.getAnnotation(Adaptive.class);
         StringBuilder code = new StringBuilder(512);
         if (adaptiveAnnotation == null) {
+            // xjh-非@Adaptive注解的方法则不支持
             return generateUnsupported(method);
         } else {
+            // xjh-获取参数中类型为URL的参数所在的参数索引位 通过下标获取对应的参数值信息
             int urlTypeIndex = getUrlTypeIndex(method);
 
             // found parameter in URL type
@@ -214,14 +221,18 @@ public class AdaptiveClassCodeGenerator {
                 code.append(generateUrlAssignmentIndirectly(method));
             }
 
+            // xjh-获取@Adaptive注解中的value，如@Adaptive({"protocol"})中的protocol，如果没有配置，就会使用目标接口的类型由驼峰形式转换为点分形式的名称作为将要获取的参数值的key名称
             String[] value = getMethodAdaptiveValue(adaptiveAnnotation);
 
+            // xjh-判断是否存在Invocation类型的参数
             boolean hasInvocation = hasInvocationArgument(method);
 
             code.append(generateInvocationArgumentNullCheck(method));
 
+            // xjh-重点逻辑：处理注解的value值，生成获取extName的逻辑，根据extName获取具体的接口实现类。extName就是我们配置文件中的key值，SPI机制可以通过此值来获取实现类的全限定名
             code.append(generateExtNameAssignment(value, hasInvocation));
             // check extName == null?
+            // xjh-生成当extName为空时的逻辑，即抛出异常
             code.append(generateExtNameNullCheck(value));
 
             code.append(generateExtensionAssignment());
@@ -248,6 +259,7 @@ public class AdaptiveClassCodeGenerator {
         String getNameCode = null;
         for (int i = value.length - 1; i >= 0; --i) {
             if (i == value.length - 1) {
+                // xjh-这里的defaultExtName为@SPI注解指定的值，我们的示例中并没有指定
                 if (null != defaultExtName) {
                     if (!"protocol".equals(value[i])) {
                         if (hasInvocation) {
@@ -263,9 +275,11 @@ public class AdaptiveClassCodeGenerator {
                         if (hasInvocation) {
                             getNameCode = String.format("url.getMethodParameter(methodName, \"%s\", \"%s\")", value[i], defaultExtName);
                         } else {
+                            // xjh-示例中走的是这里的逻辑，所以可以通过url的parameter来获取具体实现类
                             getNameCode = String.format("url.getParameter(\"%s\")", value[i]);
                         }
                     } else {
+                        // xjh-如果@Adaptive注解的value为protocol，则通过url的protocol来获取具体实现类
                         getNameCode = "url.getProtocol()";
                     }
                 }

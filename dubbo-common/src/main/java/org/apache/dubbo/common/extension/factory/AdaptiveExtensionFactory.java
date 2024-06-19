@@ -26,6 +26,8 @@ import java.util.List;
 
 /**
  * AdaptiveExtensionFactory
+ * xjh-此类注解了@Adaptive。
+ * AdaptiveExtensionFactory 不实现任何具体的功能，而是用来适配 ExtensionFactory 的 SpiExtensionFactory 和 SpringExtensionFactory 这两种实现。AdaptiveExtensionFactory 会根据运行时的一些状态来选择具体调用 ExtensionFactory 的哪个实现。
  */
 @Adaptive
 public class AdaptiveExtensionFactory implements ExtensionFactory {
@@ -44,6 +46,7 @@ public class AdaptiveExtensionFactory implements ExtensionFactory {
     @Override
     public <T> T getExtension(Class<T> type, String name) {
         for (ExtensionFactory factory : factories) {
+            // 分别从两个工厂中获取对象，只要某个工厂获取到了，则直接返回
             T extension = factory.getExtension(type, name);
             if (extension != null) {
                 return extension;

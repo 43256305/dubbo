@@ -37,6 +37,7 @@ import java.util.List;
 })
 public class Offline implements BaseCommand {
     private Logger logger = LoggerFactory.getLogger(Offline.class);
+    // xjh-这里会生成一个假类的对象，这个假类参考PersonService$Adaptive
     private static RegistryFactory registryFactory = ExtensionLoader.getExtensionLoader(RegistryFactory.class).getAdaptiveExtension();
     private static ServiceRepository serviceRepository = ApplicationModel.getServiceRepository();
 

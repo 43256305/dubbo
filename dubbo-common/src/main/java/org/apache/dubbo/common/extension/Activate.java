@@ -35,6 +35,10 @@ import java.lang.annotation.Target;
  * SPI provider can call {@link ExtensionLoader#getActivateExtension(URL, String, String)} to find out all activated
  * extensions with the given criteria.
  *
+ * xjh-用于根据某些标准自动激活扩展
+ * 这里以 Dubbo 中的 Filter 为例说明自动激活特性的含义，org.apache.dubbo.rpc.Filter 接口有非常多的扩展实现类，在一个场景中可能需要某几个 Filter 扩展实现类协同工作，
+ * 而另一个场景中可能需要另外几个实现类一起工作。这样，就需要一套配置来指定当前场景中哪些 Filter 实现是可用的，这就是 @Activate 注解要做的事情。
+ *
  * @see SPI
  * @see URL
  * @see ExtensionLoader
@@ -47,6 +51,9 @@ public @interface Activate {
      * Activate the current extension when one of the groups matches. The group passed into
      * {@link ExtensionLoader#getActivateExtension(URL, String, String)} will be used for matching.
      *
+     * xjh-当getActivateExtension(URL url, String key, String group)，中的group匹配时激活当前扩展
+     * 如dubbo中用于修饰的实现类是在 Provider 端被激活还是在 Consumer 端被激活。
+     *
      * @return group names to match
      * @see ExtensionLoader#getActivateExtension(URL, String, String)
      */
@@ -58,6 +65,7 @@ public @interface Activate {
      * For example, given <code>@Activate("cache, validation")</code>, the current extension will be return only when
      * there's either <code>cache</code> or <code>validation</code> key appeared in the URL's parameters.
      * </p>
+     * xjh-当url的参数出现了此值时，激活当前的扩展
      *
      * @return URL parameter keys
      * @see ExtensionLoader#getActivateExtension(URL, String)
@@ -85,6 +93,8 @@ public @interface Activate {
 
     /**
      * Absolute ordering info, optional
+     *
+     * xjh-排序
      *
      * @return absolute ordering info
      */

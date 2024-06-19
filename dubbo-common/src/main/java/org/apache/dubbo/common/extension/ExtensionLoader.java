@@ -149,6 +149,7 @@ public class ExtensionLoader<T> {
 
     private ExtensionLoader(Class<?> type) {
         this.type = type;
+        // xjh-这里实例化了AdaptiveExtensionFactory，并将此对象赋值给objectFactory（因为dubbo中，只有AdaptiveExtensionFactory注解了@Adaptive注解，所以这里加载ExtensionFactory的实现类时，发现AdaptiveExtensionFactory注解了此注解，则会直接实例化此类）
         objectFactory =
                 (type == ExtensionFactory.class ? null : ExtensionLoader.getExtensionLoader(ExtensionFactory.class).getAdaptiveExtension());
     }
@@ -172,6 +173,7 @@ public class ExtensionLoader<T> {
 
         ExtensionLoader<T> loader = (ExtensionLoader<T>) EXTENSION_LOADERS.get(type);
         if (loader == null) {
+            // xjh-创建ExtensionLoader，构造器中实例化了objectFactory
             EXTENSION_LOADERS.putIfAbsent(type, new ExtensionLoader<T>(type));
             loader = (ExtensionLoader<T>) EXTENSION_LOADERS.get(type);
         }
@@ -263,6 +265,8 @@ public class ExtensionLoader<T> {
 
     /**
      * Get activate extensions.
+     * xjh-group为Provider 或 Consumer
+     * values 是配置中指定的扩展名
      *
      * @param url    url
      * @param values extension point names
@@ -277,6 +281,7 @@ public class ExtensionLoader<T> {
         Set<String> loadedNames = new HashSet<>();
         Set<String> names = CollectionUtils.ofSet(values);
         if (!names.contains(REMOVE_VALUE_PREFIX + DEFAULT_KEY)) {
+            // xjh-触发cachedActivates等缓存字段的加载
             getExtensionClasses();
             for (Map.Entry<String, Object> entry : cachedActivates.entrySet()) {
                 String name = entry.getKey();
@@ -293,11 +298,13 @@ public class ExtensionLoader<T> {
                 } else {
                     continue;
                 }
-                if (isMatchGroup(group, activateGroup)
+
+                if (isMatchGroup(group, activateGroup)  // xjh-匹配group
                         && !names.contains(name)
-                        && !names.contains(REMOVE_VALUE_PREFIX + name)
-                        && isActive(activateValue, url)
+                        && !names.contains(REMOVE_VALUE_PREFIX + name)  // xjh-通过"-"明确指定不激活该扩展实现
+                        && isActive(activateValue, url) // xjh-检测URL中是否出现了指定的Key
                         && !loadedNames.contains(name)) {
+                    // xjh-加载扩展实现的实例对象，这些都是激活的
                     activateExtensionsMap.put(getExtensionClass(name), getExtension(name));
                     loadedNames.add(name);
                 }
@@ -600,8 +607,10 @@ public class ExtensionLoader<T> {
         }
     }
 
+    // xjh-获取@Adaptive适配器类，使用双重校验锁创建相应的类，并放入缓存，即相同的类只加载一次
     @SuppressWarnings("unchecked")
     public T getAdaptiveExtension() {
+        // xjh-这个cachedAdaptiveInstance缓存是AdaptiveExtensionFactory的对象，因为dubbo中只有AdaptiveExtensionFactory注解了@Adaptive
         Object instance = cachedAdaptiveInstance.get();
         if (instance == null) {
             if (createAdaptiveInstanceError != null) {
@@ -614,6 +623,7 @@ public class ExtensionLoader<T> {
                 instance = cachedAdaptiveInstance.get();
                 if (instance == null) {
                     try {
+                        // xjh-创建
                         instance = createAdaptiveExtension();
                         cachedAdaptiveInstance.set(instance);
                     } catch (Throwable t) {
@@ -669,6 +679,7 @@ public class ExtensionLoader<T> {
             injectExtension(instance);
 
 
+            // xjh-判断是否为包装类
             if (wrap) {
 
                 List<Class<?>> wrapperClassesList = new ArrayList<>();
@@ -686,12 +697,14 @@ public class ExtensionLoader<T> {
                                 || (ArrayUtils.contains(wrapper.matches(), name) && !ArrayUtils.contains(wrapper.mismatches(), name))) {
                             // xjh-将当前 instance 作为参数传给 Wrapper 的构造方法，并通过反射创建 Wrapper 实例。
                             // 然后向 Wrapper 实例中注入依赖，最后将 Wrapper 实例再次赋值给 instance 变量
+                            // 相当于在我们的实现类的外面包装了一个类，帮我们做一些额外的操作
                             instance = injectExtension((T) wrapperClass.getConstructor(type).newInstance(instance));
                         }
                     }
                 }
             }
 
+            // xjh-如果实现类实现了Lifecycle接口，则调用 initialize 方法
             initExtension(instance);
             return instance;
         } catch (Throwable t) {
@@ -760,7 +773,8 @@ public class ExtensionLoader<T> {
 
     private void injectValue(T instance, Method method, Class<?> pt, String property) {
         try {
-            // xjh-从objectFactory中获取被依赖对象
+            // xjh-从objectFactory中获取被依赖对象，objectFactory的对象为AdaptiveExtensionFactory类。
+            // AdaptiveExtensionFactory会调用SpiExtensionFactory、SpringExtensionFactory这两个实现类来获取依赖对象，只要获取到了则直接返回。前者是利用spi机制与适配器机制获取对象，后者是从spring容器中获取bean。
             Object object = objectFactory.getExtension(pt, property);
             if (object != null) {
                 // xjh-调用setter方法，注入依赖对象
@@ -938,7 +952,7 @@ public class ExtensionLoader<T> {
                                 clazz = line;
                             }
                             if (StringUtils.isNotEmpty(clazz) && !isExcluded(clazz, excludedPackages)) {
-                                // xjh-加载配置文件中指定的类型
+                                // xjh-加载配置文件中指定的类型，重点
                                 loadClass(extensionClasses, resourceURL, Class.forName(clazz, true, classLoader), name, overridden);
                             }
                         } catch (Throwable t) {
@@ -974,9 +988,12 @@ public class ExtensionLoader<T> {
                     type + ", class line: " + clazz.getName() + "), class "
                     + clazz.getName() + " is not subtype of interface.");
         }
+        // xjh-如果扩展类包含@Adaptive注解，则缓存该类。在getAdaptiveExtension()方法中，如果检测到此缓存不为空则会直接返回此缓存。
+        // 注解@Adaptive的类可以参考：AdaptiveExtensionFactory
         if (clazz.isAnnotationPresent(Adaptive.class)) {
             cacheAdaptiveClass(clazz, overridden);
         } else if (isWrapperClass(clazz)) {
+            // xjh-如果扩展实现类包含拷贝构造函数（即构造函数只有一个参数且为扩展接口类型），则缓存包装类
             cacheWrapperClass(clazz);
         } else {
             clazz.getConstructor();
@@ -990,6 +1007,7 @@ public class ExtensionLoader<T> {
 
             String[] names = NAME_SEPARATOR.split(name);
             if (ArrayUtils.isNotEmpty(names)) {
+                // xjh-缓存@Active注解的类到cachedActivates属性中，此数据被getActivateExtension()方法使用.
                 cacheActivateClass(clazz, names[0]);
                 for (String n : names) {
                     cacheName(clazz, n);
@@ -1101,6 +1119,7 @@ public class ExtensionLoader<T> {
     @SuppressWarnings("unchecked")
     private T createAdaptiveExtension() {
         try {
+            // xjh-获取适配器类，创建实例，并且注入@Inject依赖
             return injectExtension((T) getAdaptiveExtensionClass().newInstance());
         } catch (Exception e) {
             throw new IllegalStateException("Can't create adaptive extension " + type + ", cause: " + e.getMessage(), e);
@@ -1112,14 +1131,37 @@ public class ExtensionLoader<T> {
         if (cachedAdaptiveClass != null) {
             return cachedAdaptiveClass;
         }
+        // xjh-创建适配器类，并将此类放到缓存中
         return cachedAdaptiveClass = createAdaptiveExtensionClass();
     }
 
     private Class<?> createAdaptiveExtensionClass() {
+        // xjh-创建AdaptiveClassCodeGenerator并生成class代码，注意这里生成的class代码就是一个完整的类代码，此类继承了我们调用ExtensionLoader需要生成的类的接口（即PersonService）。
         String code = new AdaptiveClassCodeGenerator(type, cachedDefaultName).generate();
+        System.out.println(code);
+        /**
+         *
+         * 生成代码如下：
+         * package org.apache.dubbo.demo.learning.adaptive.api;
+         * import org.apache.dubbo.common.extension.ExtensionLoader;
+         *
+         * public class PersonService$Adaptive implements org.apache.dubbo.demo.learning.adaptive.api.PersonService {
+         *     public java.lang.String queryCountry(org.apache.dubbo.common.URL arg0) {
+         *         if (arg0 == null) throw new IllegalArgumentException("url == null");
+         *         org.apache.dubbo.common.URL url = arg0;
+         *         String extName = url.getParameter("person.service");
+         *         if (extName == null)
+         *             throw new IllegalStateException("Failed to get extension (org.apache.dubbo.demo.learning.adaptive.api.PersonService) name from url (" + url.toString() + ") use keys([person.service])");
+         *         org.apache.dubbo.demo.learning.adaptive.api.PersonService extension = (org.apache.dubbo.demo.learning.adaptive.api.PersonService) ExtensionLoader.getExtensionLoader(org.apache.dubbo.demo.learning.adaptive.api.PersonService.class).getExtension(extName);
+         *         return extension.queryCountry(arg0);
+         *     }
+         * }
+         *
+         */
         ClassLoader classLoader = findClassLoader();
         org.apache.dubbo.common.compiler.Compiler compiler =
                 ExtensionLoader.getExtensionLoader(org.apache.dubbo.common.compiler.Compiler.class).getAdaptiveExtension();
+        // xjh-根据class代码生成相应的类
         return compiler.compile(code, classLoader);
     }
 

@@ -69,6 +69,7 @@ public class SpringExtensionFactory implements ExtensionFactory {
         }
 
         for (ApplicationContext context : CONTEXTS) {
+            // xjh-从spring上下文中获取bean
             T bean = getOptionalBean(context, name, type);
             if (bean != null) {
                 return bean;

@@ -39,6 +39,10 @@ public interface RegistryFactory {
      * 5. Support the timeout=1000 request timeout setting.<br>
      * 6. Support session=60000 session timeout or expiration settings.<br>
      *
+     * xjh-此方法根据url的protocol生成相应的Registry，如：ZookeeperRegistry、RedisRegistry、NacosRegistry等等
+     * 适配器方法，Dubbo 在运行时会根据传入url为其动态生成相应的 “$Adaptive” 类型，即通过ExtensionLoader.getExtensionLoader(RegistryFactory.class).getAdaptiveExtension()方法
+     * 会生成一个不存在的类，调用此类的getRegistry(URL url)方法，可以根据url的protocol默认调用到NacosRegistryFactory/ZookeeperRegistryFactory/RedisRegistryFactory等类的getRegistry(URL url)方法。
+     *
      * @param url Registry address, is not allowed to be empty
      * @return Registry reference, never return empty value
      */
