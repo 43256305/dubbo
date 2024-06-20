@@ -19,6 +19,8 @@ package org.apache.dubbo.common.timer;
 /**
  * A handle associated with a {@link TimerTask} that is returned by a
  * {@link Timer}.
+ *
+ * xjh-接口唯一实现为：HashedWheelTimeout
  */
 public interface Timeout {
 

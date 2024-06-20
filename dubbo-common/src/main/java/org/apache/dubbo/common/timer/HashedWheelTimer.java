@@ -76,6 +76,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * and Hierarchical Timing Wheels: data structures to efficiently implement a
  * timer facility'</a>.  More comprehensive slides are located
  * <a href="http://www.cse.wustl.edu/~cdgill/courses/cs6874/TimingWheels.ppt">here</a>.
+ *
+ * xjh-通过时间轮算法实现了一个定时器，HashedWheelTimer 会根据当前时间轮指针选定对应的槽（HashedWheelBucket），从双向链表的头部开始迭代，对每个定时任务（HashedWheelTimeout）进行计算，属于当前时钟周期则取出运行，不属于则将其剩余的时钟周期数减一操作。
+ * 一个程序只需要创建一个HashedWheelTimer实例即可，因为HashedWheelTimer是单例的。
  */
 public class HashedWheelTimer implements Timer {
 
@@ -92,7 +95,9 @@ public class HashedWheelTimer implements Timer {
     private static final AtomicIntegerFieldUpdater<HashedWheelTimer> WORKER_STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(HashedWheelTimer.class, "workerState");
 
+    // xjh-真正执行定时任务的逻辑封装这个 Runnable 对象中。
     private final Worker worker = new Worker();
+    // xjh-时间轮内部真正执行定时任务的线程。
     private final Thread workerThread;
 
     private static final int WORKER_STATE_INIT = 0;
@@ -101,11 +106,14 @@ public class HashedWheelTimer implements Timer {
 
     /**
      * 0 - init, 1 - started, 2 - shut down
+     *
+     * xjh-时间轮当前状态
      */
     @SuppressWarnings({"unused", "FieldMayBeFinal"})
     private volatile int workerState;
 
     private final long tickDuration;
+    // xjh-时间轮数组
     private final HashedWheelBucket[] wheel;
     private final int mask;
     private final CountDownLatch startTimeInitialized = new CountDownLatch(1);
@@ -114,6 +122,7 @@ public class HashedWheelTimer implements Timer {
     private final AtomicLong pendingTimeouts = new AtomicLong(0);
     private final long maxPendingTimeouts;
 
+    // xjh-时间轮开始时间，提交到该时间轮的定时任务的 deadline 字段值均以该时间戳为起点进行计算。
     private volatile long startTime;
 
     /**
@@ -555,9 +564,11 @@ public class HashedWheelTimer implements Timer {
                 AtomicIntegerFieldUpdater.newUpdater(HashedWheelTimeout.class, "state");
 
         private final HashedWheelTimer timer;
+        // xjh-当前运行任务
         private final TimerTask task;
         private final long deadline;
 
+        // xjh-当前任务所处状态
         @SuppressWarnings({"unused", "FieldMayBeFinal", "RedundantFieldInitialization"})
         private volatile int state = ST_INIT;
 
@@ -570,6 +581,7 @@ public class HashedWheelTimer implements Timer {
         /**
          * This will be used to chain timeouts in HashedWheelTimerBucket via a double-linked-list.
          * As only the workerThread will act on it there is no need for synchronization / volatile.
+         * xjh-当前任务的前任务与后任务，组成一个双向链表
          */
         HashedWheelTimeout next;
         HashedWheelTimeout prev;

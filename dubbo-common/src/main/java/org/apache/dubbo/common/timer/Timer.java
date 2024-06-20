@@ -23,6 +23,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Schedules {@link TimerTask}s for one-time future execution in a background
  * thread.
+ *
+ * xjh-定义了定时器的基本行为，如提交定时任务，唯一实现类是HashedWheelTimer
  */
 public interface Timer {
 
