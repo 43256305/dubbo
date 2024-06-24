@@ -23,6 +23,8 @@ import org.apache.dubbo.common.extension.SPI;
 /**
  * RegistryFactory. (SPI, Singleton, ThreadSafe)
  *
+ * xjh-负责创建 Registry 对象。工厂与相应的Registry为一一对应的关系。
+ *
  * @see org.apache.dubbo.registry.support.AbstractRegistryFactory
  */
 @SPI("dubbo")

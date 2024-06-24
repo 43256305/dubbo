@@ -35,6 +35,8 @@ import static org.apache.dubbo.common.constants.CommonConstants.TIMEOUT_KEY;
  * AbstractZookeeperTransporter is abstract implements of ZookeeperTransporter.
  * <p>
  * If you want to extends this, implements createZookeeperClient.
+ *
+ * xjh-提供一些基本的公共行为，如：缓存zkClient实例，在某个zk节点无法连接时，切换到备用zk节点
  */
 public abstract class AbstractZookeeperTransporter implements ZookeeperTransporter {
     private static final Logger logger = LoggerFactory.getLogger(ZookeeperTransporter.class);
@@ -52,19 +54,23 @@ public abstract class AbstractZookeeperTransporter implements ZookeeperTransport
     public ZookeeperClient connect(URL url) {
         ZookeeperClient zookeeperClient;
         // address format: {[username:password@]address}
+        // xjh-获取所有zk地址
         List<String> addressList = getURLBackupAddress(url);
         // The field define the zookeeper server , including protocol, host, port, username, password
+        // xjh-获取addressList链接中没有断的zkClient，并直接返回
         if ((zookeeperClient = fetchAndUpdateZookeeperClientCache(addressList)) != null && zookeeperClient.isConnected()) {
             logger.info("find valid zookeeper client from the cache for address: " + url);
             return zookeeperClient;
         }
         // avoid creating too many connections， so add lock
+        // xjh-如果所有zk链接都断了，则创建新的zkClient
         synchronized (zookeeperClientMap) {
             if ((zookeeperClient = fetchAndUpdateZookeeperClientCache(addressList)) != null && zookeeperClient.isConnected()) {
                 logger.info("find valid zookeeper client from the cache for address: " + url);
                 return zookeeperClient;
             }
 
+            // xjh-创建zkClient，交由子类创建
             zookeeperClient = createZookeeperClient(url);
             logger.info("No valid zookeeper client found from cache, therefore create a new client for url. " + url);
             writeToClientMap(addressList, zookeeperClient);

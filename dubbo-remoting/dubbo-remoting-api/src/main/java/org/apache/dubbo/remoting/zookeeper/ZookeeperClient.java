@@ -21,12 +21,15 @@ import org.apache.dubbo.common.URL;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+// xjh-dubbo提供的与zk交互的客户端接口
 public interface ZookeeperClient {
 
+    // xjh-创建zNode节点
     void create(String path, boolean ephemeral);
 
     void delete(String path);
 
+    // xjh-获取zNode节点的子节点
     List<String> getChildren(String path);
 
     List<String> addChildListener(String path, ChildListener listener);

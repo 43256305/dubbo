@@ -35,6 +35,8 @@ import static org.apache.dubbo.registry.Constants.REGISTRY_RETRY_TIMES_KEY;
 
 /**
  * AbstractRetryTask
+ *
+ * xjh-重试任务
  */
 public abstract class AbstractRetryTask implements TimerTask {
 
@@ -112,6 +114,7 @@ public abstract class AbstractRetryTask implements TimerTask {
             // other thread cancel this timeout or stop the timer.
             return;
         }
+        // xjh-如果重试次数大于最大次数，则直接返回，默认为3
         if (times > retryTimes) {
             // reach the most times of retry.
             logger.warn("Final failed to execute task " + taskName + ", url: " + url + ", retry " + retryTimes + " times.");
@@ -121,10 +124,12 @@ public abstract class AbstractRetryTask implements TimerTask {
             logger.info(taskName + " : " + url);
         }
         try {
+            // xjh-重试
             doRetry(url, registry, timeout);
         } catch (Throwable t) { // Ignore all the exceptions and wait for the next retry
             logger.warn("Failed to execute task " + taskName + ", url: " + url + ", waiting for again, cause:" + t.getMessage(), t);
             // reput this task when catch exception.
+            // xjh-如果还是出现异常，则重新放入队列，并增加调用次数
             reput(timeout, retryPeriod);
         }
     }

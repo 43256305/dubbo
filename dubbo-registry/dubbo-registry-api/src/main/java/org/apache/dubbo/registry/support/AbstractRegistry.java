@@ -67,6 +67,11 @@ import static org.apache.dubbo.registry.Constants.REGISTRY__LOCAL_FILE_CACHE_ENA
 
 /**
  * AbstractRegistry. (SPI, Prototype, ThreadSafe)
+ *
+ * xjh-Registry 接口的所有实现类都继承了 AbstractRegistry。
+ * 此类在内存中实现了注册数据的读写功能，并将数据写入到磁盘文件中。
+ * 在网络抖动等原因而导致订阅失败时，Consumer 端的 Registry 就可以调用 getCacheUrls() 方法获取本地缓存，从而得到最近注册的 Provider URL。可见，AbstractRegistry 通过本地缓存提供了一种容错机制，保证了服务的可靠性。
+ *
  */
 public abstract class AbstractRegistry implements Registry {
 
@@ -79,6 +84,7 @@ public abstract class AbstractRegistry implements Registry {
     // Log output
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     // Local disk cache, where the special key value.registries records the list of registry centers, and the others are the list of notified service providers
+    // xjh-需要保存到缓存文件中的url数据
     private final Properties properties = new Properties();
     // File cache timing writing
     private final ExecutorService registryCacheExecutor = Executors.newFixedThreadPool(1, new NamedThreadFactory("DubboSaveRegistryCache", true));
@@ -86,11 +92,15 @@ public abstract class AbstractRegistry implements Registry {
     private boolean syncSaveFile;
     private final AtomicLong lastCacheChanged = new AtomicLong();
     private final AtomicInteger savePropertiesRetryTimes = new AtomicInteger();
+    // xjh-注册url
     private final Set<URL> registered = new ConcurrentHashSet<>();
+    // xjh-订阅url及对应监听器
     private final ConcurrentMap<URL, Set<NotifyListener>> subscribed = new ConcurrentHashMap<>();
+    // xjh-通知url，consumer url：category：provider url
     private final ConcurrentMap<URL, Map<String, List<URL>>> notified = new ConcurrentHashMap<>();
     private URL registryUrl;
     // Local disk cache file
+    // xjh-本地缓存文件
     private File file;
 
     public AbstractRegistry(URL url) {
@@ -98,6 +108,7 @@ public abstract class AbstractRegistry implements Registry {
         if (url.getParameter(REGISTRY__LOCAL_FILE_CACHE_ENABLED, true)) {
             // Start file save timer
             syncSaveFile = url.getParameter(REGISTRY_FILESAVE_SYNC_KEY, false);
+            // xjh-默认的本地缓存文件路径
             String defaultFilename = System.getProperty("user.home") + "/.dubbo/dubbo-registry-" + url.getParameter(APPLICATION_KEY) + "-" + url.getAddress().replaceAll(":", "-") + ".cache";
             String filename = url.getParameter(FILE_KEY, defaultFilename);
             File file = null;
@@ -112,6 +123,7 @@ public abstract class AbstractRegistry implements Registry {
             this.file = file;
             // When starting the subscription center,
             // we need to read the local cache file for future Registry fault tolerance processing.
+            // xjh-从文件中加载properties
             loadProperties();
             notify(url.getBackupUrls());
         }
@@ -171,6 +183,7 @@ public abstract class AbstractRegistry implements Registry {
         }
         // Save
         try {
+            // xjh-创建一个锁文件，用来锁定缓存文件
             File lockfile = new File(file.getAbsolutePath() + ".lock");
             if (!lockfile.exists()) {
                 lockfile.createNewFile();
@@ -187,6 +200,7 @@ public abstract class AbstractRegistry implements Registry {
                         file.createNewFile();
                     }
                     try (FileOutputStream outputFile = new FileOutputStream(file)) {
+                        // xjh-将properties保存到文件中
                         properties.store(outputFile, "Dubbo Registry Cache");
                     }
                 } finally {
@@ -336,18 +350,23 @@ public abstract class AbstractRegistry implements Registry {
         notified.remove(url);
     }
 
+    // xjh-在 Provider 因为网络问题与注册中心断开连接之后，会进行重连，重新连接成功之后，会调用 recover() 方法将 registered 集合中的全部 URL 重新走一遍 register() 方法，恢复注册数据。
+    // 同样，recover() 方法也会将 subscribed 集合中的 URL 重新走一遍 subscribe() 方法，恢复订阅监听器
     protected void recover() throws Exception {
         // register
+        // 获取所有registered
         Set<URL> recoverRegistered = new HashSet<>(getRegistered());
         if (!recoverRegistered.isEmpty()) {
             if (logger.isInfoEnabled()) {
                 logger.info("Recover register url " + recoverRegistered);
             }
+            // xjh-将 registered 集合中的全部 URL 重新走一遍 register() 方法，恢复注册数据。
             for (URL url : recoverRegistered) {
                 register(url);
             }
         }
         // subscribe
+        // 获取所有subscribed
         Map<URL, Set<NotifyListener>> recoverSubscribed = new HashMap<>(getSubscribed());
         if (!recoverSubscribed.isEmpty()) {
             if (logger.isInfoEnabled()) {
@@ -355,6 +374,7 @@ public abstract class AbstractRegistry implements Registry {
             }
             for (Map.Entry<URL, Set<NotifyListener>> entry : recoverSubscribed.entrySet()) {
                 URL url = entry.getKey();
+                // xjh-将 subscribed 集合中的 URL 重新走一遍 subscribe() 方法，恢复订阅监听器
                 for (NotifyListener listener : entry.getValue()) {
                     subscribe(url, listener);
                 }
@@ -389,10 +409,11 @@ public abstract class AbstractRegistry implements Registry {
 
     /**
      * Notify changes from the Provider side.
+     * xjh-当provider端url变更时通知consumer端
      *
-     * @param url      consumer side url
-     * @param listener listener
-     * @param urls     provider latest urls
+     * @param url      consumer side url consumer端url
+     * @param listener listener  consumer端url对应的listener
+     * @param urls     provider latest urls  provider端对应的全量url信息
      */
     protected void notify(URL url, NotifyListener listener, List<URL> urls) {
         if (url == null) {
@@ -411,24 +432,32 @@ public abstract class AbstractRegistry implements Registry {
         }
         // keep every provider's category.
         Map<String, List<URL>> result = new HashMap<>();
+        // 将consumer url与所有provider url进行匹配，并将匹配的url根据category进行分类放入到result中
         for (URL u : urls) {
+            // 判断是否匹配
             if (UrlUtils.isMatch(url, u)) {
+                // xjh-根据provider端url的category参数进行分类，将分类数据放入result中
                 String category = u.getParameter(CATEGORY_KEY, DEFAULT_CATEGORY);
                 List<URL> categoryList = result.computeIfAbsent(category, k -> new ArrayList<>());
                 categoryList.add(u);
             }
         }
+        // 如果匹配的url为0，则直接返回
         if (result.size() == 0) {
             return;
         }
+        // 根据consumer url获取map
         Map<String, List<URL>> categoryNotified = notified.computeIfAbsent(url, u -> new ConcurrentHashMap<>());
         for (Map.Entry<String, List<URL>> entry : result.entrySet()) {
             String category = entry.getKey();
             List<URL> categoryList = entry.getValue();
+            // xjh-将对应的分类url放入notified中
             categoryNotified.put(category, categoryList);
+            // 执行通知操作
             listener.notify(categoryList);
             // We will update our cache file after each notification.
             // When our Registry has a subscribe failure due to network jitter, we can return at least the existing cache URL.
+            // xjh-保存缓存文件
             saveProperties(url);
         }
     }
@@ -442,6 +471,7 @@ public abstract class AbstractRegistry implements Registry {
             StringBuilder buf = new StringBuilder();
             Map<String, List<URL>> categoryNotified = notified.get(url);
             if (categoryNotified != null) {
+                // xjh-将consumer url对应的provider url通过空格分割，放入到buf中
                 for (List<URL> us : categoryNotified.values()) {
                     for (URL u : us) {
                         if (buf.length() > 0) {
@@ -451,9 +481,11 @@ public abstract class AbstractRegistry implements Registry {
                     }
                 }
             }
+            // xjh-以key为consumer serviceKey，value为buf的形式放入properties，serviceKey的格式为：'{group}/{interfaceName}:{version}'
             properties.setProperty(url.getServiceKey(), buf.toString());
             long version = lastCacheChanged.incrementAndGet();
             if (syncSaveFile) {
+                // 保存文件
                 doSaveProperties(version);
             } else {
                 registryCacheExecutor.execute(new SaveProperties(version));
@@ -463,6 +495,7 @@ public abstract class AbstractRegistry implements Registry {
         }
     }
 
+    // xjh-将当前节点注册的 URL 以及订阅的监听全部清理掉
     @Override
     public void destroy() {
         if (logger.isInfoEnabled()) {

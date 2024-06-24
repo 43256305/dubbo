@@ -36,6 +36,8 @@ public class ZookeeperRegistryFactory extends AbstractRegistryFactory {
     /**
      * Invisible injection of zookeeper client via IOC/SPI
      *
+     * xjh-这里会自动注入zookeeperTransporter
+     *
      * @param zookeeperTransporter
      */
     @Inject(enable = false)

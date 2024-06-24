@@ -24,6 +24,7 @@ import org.apache.dubbo.common.utils.CollectionUtils;
 
 import java.util.List;
 
+// xjh-Registry的Wrapper类，在真正的Registry调用方法之后，将事件通知到listeners中。
 public class ListenerRegistryWrapper implements Registry {
     private static final Logger logger = LoggerFactory.getLogger(ListenerRegistryWrapper.class);
 
@@ -58,6 +59,7 @@ public class ListenerRegistryWrapper implements Registry {
         } finally {
             if (CollectionUtils.isNotEmpty(listeners)) {
                 RuntimeException exception = null;
+                // xjh-将registry事件通知所有listeners
                 for (RegistryServiceListener listener : listeners) {
                     if (listener != null) {
                         try {
@@ -82,6 +84,7 @@ public class ListenerRegistryWrapper implements Registry {
         } finally {
             if (CollectionUtils.isNotEmpty(listeners)) {
                 RuntimeException exception = null;
+                // xjh-将unregister事件通知所有listeners
                 for (RegistryServiceListener listener : listeners) {
                     if (listener != null) {
                         try {
@@ -106,6 +109,7 @@ public class ListenerRegistryWrapper implements Registry {
         } finally {
             if (CollectionUtils.isNotEmpty(listeners)) {
                 RuntimeException exception = null;
+                // xjh-将subscribe事件通知所有listeners
                 for (RegistryServiceListener registryListener : listeners) {
                     if (registryListener != null) {
                         try {

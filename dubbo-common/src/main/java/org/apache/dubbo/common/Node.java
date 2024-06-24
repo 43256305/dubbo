@@ -18,6 +18,8 @@ package org.apache.dubbo.common;
 
 /**
  * Node. (API/SPI, Prototype, ThreadSafe)
+ *
+ * xjh-node代表Provider 和 Consumer 节点，还可以表示注册中心节点。
  */
 public interface Node {
 

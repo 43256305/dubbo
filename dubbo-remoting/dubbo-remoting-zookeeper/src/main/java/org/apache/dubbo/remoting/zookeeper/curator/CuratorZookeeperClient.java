@@ -59,6 +59,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
     private static final String ZK_SESSION_EXPIRE_KEY = "zk.session.expire";
 
     static final Charset CHARSET = StandardCharsets.UTF_8;
+    // xjh-真正的zk客户端
     private final CuratorFramework client;
     private static Map<String, NodeCache> nodeCacheMap = new ConcurrentHashMap<>();
 
@@ -91,6 +92,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
     @Override
     public void createPersistent(String path) {
         try {
+            // xjh-创建持久化节点
             client.create().forPath(path);
         } catch (NodeExistsException e) {
             logger.warn("ZNode " + path + " already exists.", e);
@@ -102,6 +104,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
     @Override
     public void createEphemeral(String path) {
         try {
+            // xjh-创建临时节点
             client.create().withMode(CreateMode.EPHEMERAL).forPath(path);
         } catch (NodeExistsException e) {
             logger.warn("ZNode " + path + " already exists, since we will only try to recreate a node on a session expiration" +

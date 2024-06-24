@@ -23,6 +23,8 @@ import java.util.List;
 /**
  * RegistryService. (SPI, Prototype, ThreadSafe)
  *
+ * xjh-抽象了注册服务的基本行为，如注册服务，订阅服务，取消订阅服务，获取服务列表等。
+ *
  * @see org.apache.dubbo.registry.Registry
  * @see org.apache.dubbo.registry.RegistryFactory#getRegistry(URL)
  */

@@ -44,6 +44,8 @@ import static org.apache.dubbo.rpc.cluster.Constants.REFER_KEY;
 /**
  * AbstractRegistryFactory. (SPI, Singleton, ThreadSafe)
  *
+ * xjh-在RegistryFactory的基础上提供了一些额外操作，如提供了规范 URL 的操作以及缓存 Registry 对象的公共能力。
+ *
  * @see org.apache.dubbo.registry.RegistryFactory
  */
 public abstract class AbstractRegistryFactory implements RegistryFactory {
@@ -55,6 +57,7 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
     protected static final ReentrantLock LOCK = new ReentrantLock();
 
     // Registry Collection Map<RegistryAddress, Registry>
+    // xjh-Registry缓存
     protected static final Map<String, Registry> REGISTRIES = new HashMap<>();
 
     private static final AtomicBoolean destroyed = new AtomicBoolean(false);
@@ -125,6 +128,7 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
     @Override
     public Registry getRegistry(URL url) {
 
+        // xjh-如果所有的Registry都已经被销毁，则返回一个默认的Registry，该Registry不支持服务发现。
         Registry defaultNopRegistry = getDefaultNopRegistryIfDestroyed();
         if (null != defaultNopRegistry) {
             return defaultNopRegistry;
@@ -135,6 +139,7 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
                 .addParameter(INTERFACE_KEY, RegistryService.class.getName())
                 .removeParameters(EXPORT_KEY, REFER_KEY)
                 .build();
+        // 构造缓存key
         String key = createRegistryCacheKey(url);
         // Lock the registry access process to ensure a single instance of the registry
         LOCK.lock();
@@ -146,11 +151,13 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
                 return defaultNopRegistry;
             }
 
+            // 从缓存获取
             Registry registry = REGISTRIES.get(key);
             if (registry != null) {
                 return registry;
             }
             //create registry by spi/ioc
+            // 创建Registry根据spi/ioc
             registry = createRegistry(url);
             if (registry == null) {
                 throw new IllegalStateException("Can not create registry " + url);

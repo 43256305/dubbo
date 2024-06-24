@@ -22,6 +22,8 @@ import org.apache.dubbo.common.URL;
 /**
  * Registry. (SPI, Prototype, ThreadSafe)
  *
+ * xjh-继承了Node与RegistryService接口，它表示的就是一个拥有注册中心能力的节点，其中的 reExportRegister() 和 reExportUnregister() 方法都是委托给 RegistryService 中的相应方法。
+ *
  * @see org.apache.dubbo.registry.RegistryFactory#getRegistry(URL)
  * @see org.apache.dubbo.registry.support.AbstractRegistry
  */

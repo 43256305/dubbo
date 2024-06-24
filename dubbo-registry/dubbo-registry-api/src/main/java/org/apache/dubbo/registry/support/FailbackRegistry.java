@@ -43,29 +43,36 @@ import static org.apache.dubbo.registry.Constants.REGISTRY_RETRY_PERIOD_KEY;
 
 /**
  * FailbackRegistry. (SPI, Prototype, ThreadSafe)
+ * xjh-覆盖了 AbstractRegistry 中 register()/unregister()、subscribe()/unsubscribe() 以及 notify() 这五个核心方法，在 AbstractRegistry的基础上，结合dubbo的时间轮，提供了失败重试的能力。
  */
 public abstract class FailbackRegistry extends AbstractRegistry {
 
     /*  retry task map */
 
+    // xjh-registry失败的 URL 集合，其中 Key 是注册失败的 URL，Value 是对应的重试任务。
     private final ConcurrentMap<URL, FailedRegisteredTask> failedRegistered = new ConcurrentHashMap<URL, FailedRegisteredTask>();
 
     private final ConcurrentMap<URL, FailedUnregisteredTask> failedUnregistered = new ConcurrentHashMap<URL, FailedUnregisteredTask>();
 
+    // xjh-subscribe失败的 URL 集合，其中 Key 是subscribe失败的 URL，Value 是对应的重试任务。
     private final ConcurrentMap<Holder, FailedSubscribedTask> failedSubscribed = new ConcurrentHashMap<Holder, FailedSubscribedTask>();
 
     private final ConcurrentMap<Holder, FailedUnsubscribedTask> failedUnsubscribed = new ConcurrentHashMap<Holder, FailedUnsubscribedTask>();
 
     /**
      * The time in milliseconds the retryExecutor will wait
+     * xjh-重试操作的时间间隔。
      */
     private final int retryPeriod;
 
     // Timer for failure retry, regular check if there is a request for failure, and if there is, an unlimited retry
+    // xjh-用于定时执行失败重试操作的时间轮。
     private final HashedWheelTimer retryTimer;
 
     public FailbackRegistry(URL url) {
+        // xjh-调用父类的初始化方法，初始化本地缓存
         super(url);
+        // xjh-从url中获取重试操作的时间间隔
         this.retryPeriod = url.getParameter(REGISTRY_RETRY_PERIOD_KEY, DEFAULT_REGISTRY_RETRY_PERIOD);
 
         // since the retry task will not be very much. 128 ticks is enough.
@@ -95,10 +102,12 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         if (oldOne != null) {
             return;
         }
+        // xjh-创建一个失败重试任务，传入url与this
         FailedRegisteredTask newTask = new FailedRegisteredTask(url, this);
         oldOne = failedRegistered.putIfAbsent(url, newTask);
         if (oldOne == null) {
             // never has a retry task. then start a new task for retry.
+            // xjh-开启调度
             retryTimer.newTimeout(newTask, retryPeriod, TimeUnit.MILLISECONDS);
         }
     }
@@ -198,16 +207,20 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             logger.info("URL " + url + " will not be registered to Registry. Registry " + url + " does not accept service of this protocol type.");
             return;
         }
+        // xjh-调用父类的register方法，将url保存在内存中
         super.register(url);
+        // xjh-清理failedRegistered集合和failedUnregistered集合，并取消相关任务
         removeFailedRegistered(url);
         removeFailedUnregistered(url);
         try {
             // Sending a registration request to the server side
+            // xjh-真正的注册操作，由子类实现，如ZookeeperRegistry将url注册到zk中
             doRegister(url);
         } catch (Exception e) {
             Throwable t = e;
 
             // If the startup detection is opened, the Exception is thrown directly.
+            // xjh-检测check参数，决定是否直接抛出异常
             boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)
                     && url.getParameter(Constants.CHECK_KEY, true)
                     && !CONSUMER_PROTOCOL.equals(url.getProtocol());
@@ -222,6 +235,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             }
 
             // Record a failed registration request to a failed list, retry regularly
+            // xjh-如果注册失败，则记录失败的url，创建一个任务，将任务放到时间轮中调度
             addFailedRegistered(url);
         }
     }
@@ -361,6 +375,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             throw new IllegalArgumentException("notify listener == null");
         }
         try {
+            // xjh-这里就是调用了父类的notify方法，没有任何额外逻辑
             doNotify(url, listener, urls);
         } catch (Exception t) {
             // Record a failed registration request to a failed list

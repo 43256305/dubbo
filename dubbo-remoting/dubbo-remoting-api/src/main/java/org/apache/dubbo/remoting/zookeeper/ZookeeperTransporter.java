@@ -22,6 +22,7 @@ import org.apache.dubbo.common.extension.SPI;
 
 import static org.apache.dubbo.common.extension.ExtensionLoader.getExtensionLoader;
 
+// xjh-使用SPI机制，默认有两个实现类：curator5/curator
 @SPI
 public interface ZookeeperTransporter {
 
@@ -29,6 +30,7 @@ public interface ZookeeperTransporter {
 
     String CURATOR = "curator";
 
+    // xjh-负责创建zkClient
     ZookeeperClient connect(URL url);
 
     static ZookeeperTransporter getExtension() {
