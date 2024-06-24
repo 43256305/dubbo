@@ -22,6 +22,8 @@ import java.util.Map;
 
 /**
  * Object input interface.
+ *
+ * xjh-反序列化接口
  */
 public interface ObjectInput extends DataInput {
 

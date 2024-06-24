@@ -30,6 +30,7 @@ import java.io.OutputStream;
  */
 public class Hessian2ObjectOutput implements ObjectOutput, Cleanable {
 
+    // xjh-真正的序列化都是委托给Hessian2Output
     private final Hessian2Output mH2o;
 
     public Hessian2ObjectOutput(OutputStream os) {

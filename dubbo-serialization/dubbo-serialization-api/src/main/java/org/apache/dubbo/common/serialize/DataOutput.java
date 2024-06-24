@@ -20,6 +20,8 @@ import java.io.IOException;
 
 /**
  * Basic data type output interface.
+ *
+ * xjh-序列化基本接口，提供了一些原始类型的序列化
  */
 public interface DataOutput {
 

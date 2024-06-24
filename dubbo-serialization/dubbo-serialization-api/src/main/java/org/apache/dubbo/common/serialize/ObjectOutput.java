@@ -21,6 +21,8 @@ import java.util.Map;
 
 /**
  * Object output interface.
+ *
+ * xjh-序列化基本接口，在DataOutput的基础上增加了对象的序列化支持
  */
 public interface ObjectOutput extends DataOutput {
 

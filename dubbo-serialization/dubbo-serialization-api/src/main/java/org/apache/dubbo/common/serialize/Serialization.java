@@ -31,6 +31,8 @@ import java.io.OutputStream;
  * <pre>
  *     e.g. &lt;dubbo:protocol serialization="xxx" /&gt;
  * </pre>
+ *
+ * xjh-序列化核心接口
  */
 @SPI("hessian2")
 public interface Serialization {
@@ -53,6 +55,7 @@ public interface Serialization {
 
     /**
      * Get a serialization implementation instance
+     * xjh-获取序列化对象实例
      *
      * @param url URL address for the remote service
      * @param output the underlying output stream
@@ -64,6 +67,7 @@ public interface Serialization {
 
     /**
      * Get a deserialization implementation instance
+     * xjh-获取反序列化对象实例
      *
      * @param url URL address for the remote service
      * @param input the underlying input stream
