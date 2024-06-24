@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+// xjh-基于netty的ByteBuf的ChannelBuffer实现
 public class NettyBackedChannelBuffer implements ChannelBuffer {
 
     private ByteBuf buffer;

@@ -22,6 +22,8 @@ import org.apache.dubbo.remoting.buffer.ChannelBuffer;
 
 import java.io.IOException;
 
+// xjh-编解码器抽象
+// 注意，DecodeHandler 是对请求体和响应结果的解码，Codec2 是对整个请求和响应的编解码。
 @SPI
 public interface Codec2 {
 
@@ -32,6 +34,7 @@ public interface Codec2 {
     Object decode(Channel channel, ChannelBuffer buffer) throws IOException;
 
 
+    // xjh-处理粘包拆包枚举
     enum DecodeResult {
         NEED_MORE_INPUT, SKIP_SOME_INPUT
     }

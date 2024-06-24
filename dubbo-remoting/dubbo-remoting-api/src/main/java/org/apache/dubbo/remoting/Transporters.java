@@ -24,6 +24,9 @@ import org.apache.dubbo.remoting.transport.ChannelHandlerDispatcher;
 
 /**
  * Transporter facade. (API, Static, ThreadSafe)
+ *
+ * xjh-Transporter的门面类。在Transporter的上面加了一层，提供了SPI操作，通过SPI获取真正的Transporter对象，然后再去调用bind/connect方法。
+ *
  */
 public class Transporters {
 
@@ -51,8 +54,10 @@ public class Transporters {
         if (handlers.length == 1) {
             handler = handlers[0];
         } else {
+            // xjh-将多个handler封装成一个ChannelHandlerDispatcher
             handler = new ChannelHandlerDispatcher(handlers);
         }
+        // xjh-通过SPI获取真正的Transporter对象，并调用真正的bind方法
         return getTransporter().bind(url, handler);
     }
 
@@ -70,6 +75,7 @@ public class Transporters {
         } else if (handlers.length == 1) {
             handler = handlers[0];
         } else {
+            // xjh-将多个handler封装成一个ChannelHandlerDispatcher
             handler = new ChannelHandlerDispatcher(handlers);
         }
         return getTransporter().connect(url, handler);

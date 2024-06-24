@@ -26,6 +26,9 @@ import org.apache.dubbo.common.extension.SPI;
  * <a href="http://en.wikipedia.org/wiki/Transport_Layer">Transport Layer</a>
  * <a href="http://en.wikipedia.org/wiki/Client%E2%80%93server_model">Client/Server</a>
  *
+ * xjh-通过Transporter我们可以根据url来选择不同的Client 和 RemotingServer 实现，达到底层 NIO 库切换的目的，而且无须修改任何代码。
+ * 即使有更先进的 NIO 库出现，我们也只需要开发相应的 dubbo-remoting-* 实现模块提供 Transporter、Client、RemotingServer 等核心接口的实现，即可接入，完全符合开放-封闭原则。
+ *
  * @see org.apache.dubbo.remoting.Transporters
  */
 @SPI("netty")

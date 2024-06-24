@@ -48,6 +48,7 @@ public class ConnectionOrderedChannelHandler extends WrappedChannelHandler {
     public ConnectionOrderedChannelHandler(ChannelHandler handler, URL url) {
         super(handler, url);
         String threadName = url.getParameter(THREAD_NAME_KEY, DEFAULT_THREAD_NAME);
+        // xjh-这里单独创建了一个特殊的connectionExecutor，只有一个线程，用来处理连接事件
         connectionExecutor = new ThreadPoolExecutor(1, 1,
                 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(url.getPositiveParameter(CONNECT_QUEUE_CAPACITY, Integer.MAX_VALUE)),
@@ -61,6 +62,7 @@ public class ConnectionOrderedChannelHandler extends WrappedChannelHandler {
     public void connected(Channel channel) throws RemotingException {
         try {
             checkQueueLength();
+            // xjh-连接事件交由本handler的特殊connectionExecutor
             connectionExecutor.execute(new ChannelEventRunnable(channel, handler, ChannelState.CONNECTED));
         } catch (Throwable t) {
             throw new ExecutionException("connect event", channel, getClass() + " error when process connected event .", t);
@@ -71,6 +73,7 @@ public class ConnectionOrderedChannelHandler extends WrappedChannelHandler {
     public void disconnected(Channel channel) throws RemotingException {
         try {
             checkQueueLength();
+            // xjh-连接事件交由本handler的特殊connectionExecutor
             connectionExecutor.execute(new ChannelEventRunnable(channel, handler, ChannelState.DISCONNECTED));
         } catch (Throwable t) {
             throw new ExecutionException("disconnected event", channel, getClass() + " error when process disconnected event .", t);
@@ -81,6 +84,7 @@ public class ConnectionOrderedChannelHandler extends WrappedChannelHandler {
     public void received(Channel channel, Object message) throws RemotingException {
         ExecutorService executor = getPreferredExecutorService(message);
         try {
+            // xjh-消息接受则由spi机制获取的线程池处理
             executor.execute(new ChannelEventRunnable(channel, handler, ChannelState.RECEIVED, message));
         } catch (Throwable t) {
             if (message instanceof Request && t instanceof RejectedExecutionException) {

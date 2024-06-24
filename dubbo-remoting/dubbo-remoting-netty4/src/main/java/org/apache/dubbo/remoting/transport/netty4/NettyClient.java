@@ -48,6 +48,8 @@ import static org.apache.dubbo.remoting.transport.netty4.NettyEventLoopFactory.s
 
 /**
  * NettyClient.
+ *
+ * xjh-真正的client实现。
  */
 public class NettyClient extends AbstractClient {
 
@@ -89,8 +91,10 @@ public class NettyClient extends AbstractClient {
      */
     @Override
     protected void doOpen() throws Throwable {
+        // xjh-创建NettyClientHandler
         final NettyClientHandler nettyClientHandler = createNettyClientHandler();
         bootstrap = new Bootstrap();
+        // xjh-初始化bootstrap
         initBootstrap(nettyClientHandler);
     }
 
@@ -117,6 +121,7 @@ public class NettyClient extends AbstractClient {
                     ch.pipeline().addLast("negotiation", SslHandlerInitializer.sslClientHandler(getUrl(), nettyClientHandler));
                 }
 
+                // xjh-获取父类中的编解码器，参考AbstractEndpoint::getChannelCodec
                 NettyCodecAdapter adapter = new NettyCodecAdapter(getCodec(), getUrl(), NettyClient.this);
                 ch.pipeline()//.addLast("logging",new LoggingHandler(LogLevel.INFO))//for debug
                         .addLast("decoder", adapter.getDecoder())
@@ -137,6 +142,7 @@ public class NettyClient extends AbstractClient {
     @Override
     protected void doConnect() throws Throwable {
         long start = System.currentTimeMillis();
+        // xjh-建立连接
         ChannelFuture future = bootstrap.connect(getConnectAddress());
         try {
             boolean ret = future.awaitUninterruptibly(getConnectTimeout(), MILLISECONDS);

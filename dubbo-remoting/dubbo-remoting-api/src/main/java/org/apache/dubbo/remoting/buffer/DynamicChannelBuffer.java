@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+// xjh-提供了动态扩容功能
 public class DynamicChannelBuffer extends AbstractChannelBuffer {
 
     private final ChannelBufferFactory factory;
@@ -45,6 +46,7 @@ public class DynamicChannelBuffer extends AbstractChannelBuffer {
 
     @Override
     public void ensureWritableBytes(int minWritableBytes) {
+        // xjh-不需要扩容则直接返回
         if (minWritableBytes <= writableBytes()) {
             return;
         }
@@ -60,6 +62,7 @@ public class DynamicChannelBuffer extends AbstractChannelBuffer {
             newCapacity <<= 1;
         }
 
+        // xjh-根据计算长度创建一个新的缓冲区
         ChannelBuffer newBuffer = factory().getBuffer(newCapacity);
         newBuffer.writeBytes(buffer, 0, writerIndex());
         buffer = newBuffer;

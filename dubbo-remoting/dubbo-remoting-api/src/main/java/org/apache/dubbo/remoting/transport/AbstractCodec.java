@@ -34,6 +34,8 @@ import static org.apache.dubbo.common.constants.CommonConstants.SIDE_KEY;
 
 /**
  * AbstractCodec
+ *
+ * xjh-提供了一些编解码的额外方法，如获取当前序列化类，检查payload，判断是client端还是server端
  */
 public abstract class AbstractCodec implements Codec2 {
 

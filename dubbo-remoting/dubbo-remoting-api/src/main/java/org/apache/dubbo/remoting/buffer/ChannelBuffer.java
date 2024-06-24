@@ -199,6 +199,7 @@ import java.nio.ByteBuffer;
  * Please refer to {@link ChannelBufferInputStream} and {@link
  * ChannelBufferOutputStream}.
  *
+ * xjh-缓冲区统一接口，提供了对byte[]的操作。
  *
  */
 public interface ChannelBuffer extends Comparable<ChannelBuffer> {

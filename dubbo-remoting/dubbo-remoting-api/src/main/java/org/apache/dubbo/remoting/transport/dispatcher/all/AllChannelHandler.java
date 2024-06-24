@@ -57,8 +57,10 @@ public class AllChannelHandler extends WrappedChannelHandler {
 
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
+        // xjh-接受到消息时获取线程池，如果未响应，则获取的为ThreadlessExecutor
         ExecutorService executor = getPreferredExecutorService(message);
         try {
+            // xjh-将消息封装成ChannelEventRunnable交给线程池执行
             executor.execute(new ChannelEventRunnable(channel, handler, ChannelState.RECEIVED, message));
         } catch (Throwable t) {
         	if(message instanceof Request && t instanceof RejectedExecutionException){

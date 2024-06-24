@@ -19,6 +19,7 @@ package org.apache.dubbo.remoting.buffer;
 
 import java.nio.ByteBuffer;
 
+// xjh-ChannelBuffer门面类，提供了一些创建ChannelBuffer实例的静态方法，比如创建DynamicChannelBuffer/HeapChannelBuffer
 public final class ChannelBuffers {
 
     public static final ChannelBuffer EMPTY_BUFFER = new HeapChannelBuffer(0);

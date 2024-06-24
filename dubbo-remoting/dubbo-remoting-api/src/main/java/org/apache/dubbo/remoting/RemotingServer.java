@@ -27,6 +27,8 @@ import java.util.Collection;
  * <p>
  * <a href="http://en.wikipedia.org/wiki/Client%E2%80%93server_model">Client/Server</a>
  *
+ * xjh-服务端，相比客户端，服务端多了一些channel相关方法，如getChannels()方法，用来获取所有连接的Channel。
+ *
  * @see org.apache.dubbo.remoting.Transporter#bind(org.apache.dubbo.common.URL, ChannelHandler)
  */
 public interface RemotingServer extends Endpoint, Resetable, IdleSensible {

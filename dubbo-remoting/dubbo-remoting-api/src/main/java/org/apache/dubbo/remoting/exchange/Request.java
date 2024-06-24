@@ -39,6 +39,7 @@ public class Request {
 
     private boolean mBroken = false;
 
+    // xjh-请求体
     private Object mData;
 
     public Request() {

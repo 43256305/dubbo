@@ -23,6 +23,7 @@ import org.apache.dubbo.remoting.Channel;
 
 /**
  * CloseTimerTask
+ * xjh-server端自动关闭连接任务
  */
 public class CloseTimerTask extends AbstractTimerTask {
 

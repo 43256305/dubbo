@@ -31,6 +31,7 @@ import org.apache.dubbo.remoting.transport.ChannelHandlerDelegate;
 
 import java.util.concurrent.ExecutorService;
 
+// xjh-提供了根据消息的不同类型选择不同线程池的能力。如果为response则选择与future关联的线程池，否则使用executorRepository管理的共享线程池。
 public class WrappedChannelHandler implements ChannelHandlerDelegate {
 
     protected static final Logger logger = LoggerFactory.getLogger(WrappedChannelHandler.class);
@@ -103,10 +104,12 @@ public class WrappedChannelHandler implements ChannelHandlerDelegate {
      * 1. Use ThreadlessExecutor, aka., delegate callback directly to the thread initiating the call.
      * 2. Use shared executor to execute the callback.
      *
+     * xjh-如果为消息为response，则获取与future关联的线程池，即ThreadlessExecutor。不为response，则获取executorRepository管理的共享线程池。
      * @param msg
      * @return
      */
     public ExecutorService getPreferredExecutorService(Object msg) {
+        // xjh-如果未响应
         if (msg instanceof Response) {
             Response response = (Response) msg;
             DefaultFuture responseFuture = DefaultFuture.getFuture(response.getId());
@@ -114,6 +117,7 @@ public class WrappedChannelHandler implements ChannelHandlerDelegate {
             if (responseFuture == null) {
                 return getSharedExecutorService();
             } else {
+                // 获取与DefaultFuture绑定的线程池，即ThreadlessExecutor
                 ExecutorService executor = responseFuture.getExecutor();
                 if (executor == null || executor.isShutdown()) {
                     executor = getSharedExecutorService();

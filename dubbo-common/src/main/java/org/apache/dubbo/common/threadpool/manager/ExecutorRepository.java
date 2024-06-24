@@ -24,6 +24,8 @@ import java.util.concurrent.ScheduledExecutorService;
 
 /**
  *
+ * xjh-负责管理线程池，只有一个默认实现DefaultExecutorRepository
+ *
  */
 @SPI("default")
 public interface ExecutorRepository {

@@ -38,6 +38,8 @@ import static org.apache.dubbo.common.constants.CommonConstants.TIMEOUT_KEY;
 
 /**
  * ExchangeReceiver
+ *
+ * xjh-提供了发送请求构造并返回DefaultFuture的能力
  */
 final class HeaderExchangeChannel implements ExchangeChannel {
 
@@ -93,6 +95,7 @@ final class HeaderExchangeChannel implements ExchangeChannel {
             throw new RemotingException(this.getLocalAddress(), null,
                     "Failed to send message " + message + ", cause: The channel " + this + " is closed!");
         }
+        // xjh-通过channel发送消息
         if (message instanceof Request
                 || message instanceof Response
                 || message instanceof String) {
@@ -132,6 +135,7 @@ final class HeaderExchangeChannel implements ExchangeChannel {
         req.setVersion(Version.getProtocolVersion());
         req.setTwoWay(true);
         req.setData(request);
+        // xjh-返回一个DefaultFuture
         DefaultFuture future = DefaultFuture.newFuture(channel, req, timeout, executor);
         try {
             channel.send(req);

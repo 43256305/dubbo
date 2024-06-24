@@ -52,6 +52,7 @@ public class DefaultExecutorRepository implements ExecutorRepository {
     private ScheduledExecutorService serviceExporterExecutor;
 
 
+    // xjh-缓存已有线程池。
     private ConcurrentMap<String, ConcurrentMap<Integer, ExecutorService>> data = new ConcurrentHashMap<>();
 
     public DefaultExecutorRepository() {
@@ -69,13 +70,16 @@ public class DefaultExecutorRepository implements ExecutorRepository {
      * @return
      */
     public synchronized ExecutorService createExecutorIfAbsent(URL url) {
+        // xjh-EXECUTOR_SERVICE_COMPONENT_KEY参数为：provider/consumer
         Map<Integer, ExecutorService> executors = data.computeIfAbsent(EXECUTOR_SERVICE_COMPONENT_KEY, k -> new ConcurrentHashMap<>());
         //issue-7054:Consumer's executor is sharing globally, key=Integer.MAX_VALUE. Provider's executor is sharing by protocol.
+        // xjh-端口
         Integer portKey = CONSUMER_SIDE.equalsIgnoreCase(url.getParameter(SIDE_KEY)) ? Integer.MAX_VALUE : url.getPort();
         ExecutorService executor = executors.computeIfAbsent(portKey, k -> createExecutor(url));
         // If executor has been shut down, create a new one
         if (executor.isShutdown() || executor.isTerminated()) {
             executors.remove(portKey);
+            // xjh-使用spi机制创建executor
             executor = createExecutor(url);
             executors.put(portKey, executor);
         }

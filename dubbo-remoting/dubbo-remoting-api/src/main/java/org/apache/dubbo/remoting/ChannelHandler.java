@@ -22,6 +22,9 @@ import org.apache.dubbo.common.extension.SPI;
 /**
  * ChannelHandler. (API, Prototype, ThreadSafe)
  *
+ * xjh-绑定在Channel上的消息处理器，类似netty中的ChannelHandler。
+ * 所有方法都是事件发生时的回调。
+ *
  * @see org.apache.dubbo.remoting.Transporter#bind(org.apache.dubbo.common.URL, ChannelHandler)
  * @see org.apache.dubbo.remoting.Transporter#connect(org.apache.dubbo.common.URL, ChannelHandler)
  */

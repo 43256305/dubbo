@@ -25,6 +25,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 
+// xjh-基于byte[]的ChannelBuffer实现。
 public class HeapChannelBuffer extends AbstractChannelBuffer {
 
     /**

@@ -38,19 +38,23 @@ import static org.apache.dubbo.common.constants.CommonConstants.TIMEOUT_KEY;
 
 /**
  * NettyChannel maintains the cache of channel.
+ * xjh-channel的真正实现。
  */
 final class NettyChannel extends AbstractChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(NettyChannel.class);
     /**
      * the cache for netty channel and dubbo channel
+     * xjh-用来缓存当前 JVM 中 Netty 框架 Channel 与 Dubbo Channel 之间的映射关系。
      */
     private static final ConcurrentMap<Channel, NettyChannel> CHANNEL_MAP = new ConcurrentHashMap<Channel, NettyChannel>();
     /**
      * netty channel
+     * xjh-netty中的channel
      */
     private final Channel channel;
 
+    // xjh-绑定在channel上的属性
     private final Map<String, Object> attributes = new ConcurrentHashMap<String, Object>();
 
     private final AtomicBoolean active = new AtomicBoolean(false);
@@ -154,15 +158,18 @@ final class NettyChannel extends AbstractChannel {
     @Override
     public void send(Object message, boolean sent) throws RemotingException {
         // whether the channel is closed
+        // xjh-如果channel已经关闭则抛出异常
         super.send(message, sent);
 
         boolean success = true;
         int timeout = 0;
         try {
+            // xjh-调用netty的channel发送数据
             ChannelFuture future = channel.writeAndFlush(message);
             if (sent) {
                 // wait timeout ms
                 timeout = getUrl().getPositiveParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT);
+                // xjh-如果需要等待则阻塞
                 success = future.await(timeout);
             }
             Throwable cause = future.cause();

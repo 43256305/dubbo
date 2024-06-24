@@ -35,8 +35,10 @@ public abstract class AbstractEndpoint extends AbstractPeer implements Resetable
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractEndpoint.class);
 
+    // xjh-编解码器
     private Codec2 codec;
 
+    // xjh-链接超时时间
     private int connectTimeout;
 
     public AbstractEndpoint(URL url, ChannelHandler handler) {
@@ -46,6 +48,7 @@ public abstract class AbstractEndpoint extends AbstractPeer implements Resetable
     }
 
     protected static Codec2 getChannelCodec(URL url) {
+        // xjh-根据SPI机制获取codec2
         String codecName = url.getProtocol(); // codec extension name must stay the same with protocol name
         if (ExtensionLoader.getExtensionLoader(Codec2.class).hasExtension(codecName)) {
             return ExtensionLoader.getExtensionLoader(Codec2.class).getExtension(codecName);
@@ -57,6 +60,7 @@ public abstract class AbstractEndpoint extends AbstractPeer implements Resetable
 
     @Override
     public void reset(URL url) {
+        // xjh-Resetable接口实现方法，重置connectTimeout/codec
         if (isClosed()) {
             throw new IllegalStateException("Failed to reset parameters "
                     + url + ", cause: Channel closed. channel: " + getLocalAddress());

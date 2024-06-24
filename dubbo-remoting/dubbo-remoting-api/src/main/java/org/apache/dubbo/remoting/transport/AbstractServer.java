@@ -40,6 +40,8 @@ import static org.apache.dubbo.remoting.Constants.DEFAULT_ACCEPTS;
 
 /**
  * AbstractServer
+ *
+ * xjh-server的抽象，实现了服务端的基本逻辑
  */
 public abstract class AbstractServer extends AbstractEndpoint implements RemotingServer {
 
@@ -48,8 +50,10 @@ public abstract class AbstractServer extends AbstractEndpoint implements Remotin
     ExecutorService executor;
     private InetSocketAddress localAddress;
     private InetSocketAddress bindAddress;
+    // xjh-最大连接数
     private int accepts;
 
+    // xjh-线程池工厂，负责生产executor
     private ExecutorRepository executorRepository = ExtensionLoader.getExtensionLoader(ExecutorRepository.class).getDefaultExtension();
 
     public AbstractServer(URL url, ChannelHandler handler) throws RemotingException {
@@ -61,9 +65,11 @@ public abstract class AbstractServer extends AbstractEndpoint implements Remotin
         if (url.getParameter(ANYHOST_KEY, false) || NetUtils.isInvalidLocalHost(bindIp)) {
             bindIp = ANYHOST_VALUE;
         }
+        // xjh-创建InetSocketAddress
         bindAddress = new InetSocketAddress(bindIp, bindPort);
         this.accepts = url.getParameter(ACCEPTS_KEY, DEFAULT_ACCEPTS);
         try {
+            // xjh-建立连接，让具体实现类去实现
             doOpen();
             if (logger.isInfoEnabled()) {
                 logger.info("Start " + getClass().getSimpleName() + " bind " + getBindAddress() + ", export " + getLocalAddress());
@@ -72,6 +78,7 @@ public abstract class AbstractServer extends AbstractEndpoint implements Remotin
             throw new RemotingException(url.toInetSocketAddress(), null, "Failed to bind " + getClass().getSimpleName()
                     + " on " + getLocalAddress() + ", cause: " + t.getMessage(), t);
         }
+        // xjh-生产executor
         executor = executorRepository.createExecutorIfAbsent(url);
     }
 

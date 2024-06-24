@@ -28,6 +28,7 @@ import org.apache.dubbo.remoting.transport.DecodeHandler;
 /**
  * DefaultMessenger
  *
+ * xjh-实现了Exchanger，用于创建HeaderExchangeClient与HeaderExchangeServer
  *
  */
 public class HeaderExchanger implements Exchanger {
@@ -36,6 +37,7 @@ public class HeaderExchanger implements Exchanger {
 
     @Override
     public ExchangeClient connect(URL url, ExchangeHandler handler) throws RemotingException {
+        // xjh-创建了DecodeHandler
         return new HeaderExchangeClient(Transporters.connect(url, new DecodeHandler(new HeaderExchangeHandler(handler))), true);
     }
 

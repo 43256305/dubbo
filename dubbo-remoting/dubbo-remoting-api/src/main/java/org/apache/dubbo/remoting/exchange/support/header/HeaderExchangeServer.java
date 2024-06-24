@@ -50,6 +50,8 @@ import static org.apache.dubbo.remoting.utils.UrlUtils.getIdleTimeout;
 
 /**
  * ExchangeServerImpl
+ *
+ * xjh-提供了自动关闭长时间无通信连接任务
  */
 public class HeaderExchangeServer implements ExchangeServer {
 
@@ -259,6 +261,7 @@ public class HeaderExchangeServer implements ExchangeServer {
     }
 
     private void startIdleCheckTask(URL url) {
+        // xjh-nettyServer并不会启动此任务，而是使用NettyServerHandler::userEventTriggered来关闭连接。
         if (!server.canHandleIdle()) {
             AbstractTimerTask.ChannelProvider cp = () -> unmodifiableCollection(HeaderExchangeServer.this.getChannels());
             int idleTimeout = getIdleTimeout(url);
@@ -266,6 +269,7 @@ public class HeaderExchangeServer implements ExchangeServer {
             CloseTimerTask closeTimerTask = new CloseTimerTask(cp, idleTimeoutTick, idleTimeout);
             this.closeTimerTask = closeTimerTask;
 
+            // xjh-调度连接自动关闭任务
             // init task and start timer.
             IDLE_CHECK_TIMER.newTimeout(closeTimerTask, idleTimeoutTick, TimeUnit.MILLISECONDS);
         }

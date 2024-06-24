@@ -39,6 +39,7 @@ public class MessageOnlyChannelHandler extends WrappedChannelHandler {
     public void received(Channel channel, Object message) throws RemotingException {
         ExecutorService executor = getPreferredExecutorService(message);
         try {
+            // xjh-所有消息都有线程池处理
             executor.execute(new ChannelEventRunnable(channel, handler, ChannelState.RECEIVED, message));
         } catch (Throwable t) {
             if(message instanceof Request && t instanceof RejectedExecutionException){

@@ -41,11 +41,14 @@ import static org.apache.dubbo.common.constants.CommonConstants.THREAD_NAME_KEY;
 
 /**
  * AbstractClient
+ *
+ * xjh-client抽象，实现了客户端基本逻辑
  */
 public abstract class AbstractClient extends AbstractEndpoint implements Client {
 
     protected static final String CLIENT_THREAD_POOL_NAME = "DubboClientHandler";
     private static final Logger logger = LoggerFactory.getLogger(AbstractClient.class);
+    // xjh-在 Client 底层进行连接、断开、重连等操作时，需要获取该锁进行同步。
     private final Lock connectLock = new ReentrantLock();
     private final boolean needReconnect;
     //issue-7054:Consumer's executor is sharing globally.
@@ -57,9 +60,11 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
         // set default needReconnect true when channel is not connected
         needReconnect = url.getParameter(Constants.SEND_RECONNECT_KEY, true);
 
+        // xjh-获取线程池
         initExecutor(url);
 
         try {
+            // xjh-初始化连接参数
             doOpen();
         } catch (Throwable t) {
             close();
@@ -195,6 +200,7 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
                 return;
             }
 
+            // xjh-建立连接
             doConnect();
 
             if (!isConnected()) {

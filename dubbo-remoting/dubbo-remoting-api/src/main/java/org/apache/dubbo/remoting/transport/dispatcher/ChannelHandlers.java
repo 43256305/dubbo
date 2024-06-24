@@ -23,6 +23,8 @@ import org.apache.dubbo.remoting.Dispatcher;
 import org.apache.dubbo.remoting.exchange.support.header.HeartbeatHandler;
 import org.apache.dubbo.remoting.transport.MultiMessageHandler;
 
+// xjh-单例模式，获取channelHandler
+// handler之间关系如下：NettyServerHandler包含NettyServer包含MultiMessageHandler包含HeartbeatHandler包含AllChannelHandler包含DecodeHandler包含HeaderExchangeHandler
 public class ChannelHandlers {
 
     private static ChannelHandlers INSTANCE = new ChannelHandlers();

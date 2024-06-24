@@ -28,6 +28,9 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * ChannelListenerDispatcher
+ *
+ * xjh-提供了批量ChannelHandler的回调功能
+ *
  */
 public class ChannelHandlerDispatcher implements ChannelHandler {
 

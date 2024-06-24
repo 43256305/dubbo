@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+// xjh-ChannelBuffer的基本实现类
 public abstract class AbstractChannelBuffer implements ChannelBuffer {
 
     private int readerIndex;

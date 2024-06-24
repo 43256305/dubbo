@@ -21,6 +21,8 @@ import java.net.InetSocketAddress;
 /**
  * Channel. (API/SPI, Prototype, ThreadSafe)
  *
+ * xjh-继承了Endpoint，代表两个Endpoint之间的通道。
+ *
  * @see org.apache.dubbo.remoting.Client
  * @see RemotingServer#getChannels()
  * @see RemotingServer#getChannel(InetSocketAddress)

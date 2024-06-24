@@ -44,13 +44,17 @@ import static org.apache.dubbo.common.constants.CommonConstants.TIMEOUT_KEY;
 
 /**
  * DefaultFuture.
+ *
+ * xjh-继承了CompletableFuture
  */
 public class DefaultFuture extends CompletableFuture<Object> {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultFuture.class);
 
+    // xjh-管理请求与channel的关联关系，key为请求id，value为channel
     private static final Map<Long, Channel> CHANNELS = new ConcurrentHashMap<>();
 
+    // xjh-管理请求与DefaultFuture的关联关系，key为请求id，value为DefaultFuture
     private static final Map<Long, DefaultFuture> FUTURES = new ConcurrentHashMap<>();
 
     public static final Timer TIME_OUT_TIMER = new HashedWheelTimer(
@@ -59,14 +63,17 @@ public class DefaultFuture extends CompletableFuture<Object> {
             TimeUnit.MILLISECONDS);
 
     // invoke id.
+    // xjh-请求id
     private final Long id;
     private final Channel channel;
     private final Request request;
     private final int timeout;
     private final long start = System.currentTimeMillis();
+    // xjh-请求发送时间戳
     private volatile long sent;
     private Timeout timeoutCheckTask;
 
+    // xjh-请求关联线程池
     private ExecutorService executor;
 
     public ExecutorService getExecutor() {
@@ -91,6 +98,7 @@ public class DefaultFuture extends CompletableFuture<Object> {
      * check time out of the future
      */
     private static void timeoutCheck(DefaultFuture future) {
+        // xjh-创建一个超时任务
         TimeoutCheckTask task = new TimeoutCheckTask(future.getId());
         future.timeoutCheckTask = TIME_OUT_TIMER.newTimeout(task, future.getTimeout(), TimeUnit.MILLISECONDS);
     }
@@ -106,13 +114,16 @@ public class DefaultFuture extends CompletableFuture<Object> {
      * @return a new DefaultFuture
      */
     public static DefaultFuture newFuture(Channel channel, Request request, int timeout, ExecutorService executor) {
+        // xjh-创建DefaultFuture，并设置属性
         final DefaultFuture future = new DefaultFuture(channel, request, timeout);
         future.setExecutor(executor);
         // ThreadlessExecutor needs to hold the waiting future in case of circuit return.
+        // xjh-ThreadlessExecutor关联future
         if (executor instanceof ThreadlessExecutor) {
             ((ThreadlessExecutor) executor).setWaitingFuture(future);
         }
         // timeout check
+        // xjh-创建一个定时任务，用于处理响应超时情况
         timeoutCheck(future);
         return future;
     }
@@ -126,6 +137,7 @@ public class DefaultFuture extends CompletableFuture<Object> {
     }
 
     public static void sent(Channel channel, Request request) {
+        // xjh-记录请求发送时间戳
         DefaultFuture future = FUTURES.get(request.getId());
         if (future != null) {
             future.doSent();
@@ -159,15 +171,19 @@ public class DefaultFuture extends CompletableFuture<Object> {
         received(channel, response, false);
     }
 
+    // xjh-此方法两个入口：一个是正常响应，一个是超时响应
     public static void received(Channel channel, Response response, boolean timeout) {
         try {
+            // xjh-从缓存中去除
             DefaultFuture future = FUTURES.remove(response.getId());
             if (future != null) {
                 Timeout t = future.timeoutCheckTask;
+                // xjh-未超时，取消定时任务
                 if (!timeout) {
                     // decrease Time
                     t.cancel();
                 }
+                // xjh-处理响应，不管是否超时，都会走这里
                 future.doReceived(response);
             } else {
                 logger.warn("The timeout response finally returned at "
@@ -201,12 +217,16 @@ public class DefaultFuture extends CompletableFuture<Object> {
             throw new IllegalStateException("response cannot be null");
         }
         if (res.getStatus() == Response.OK) {
+            // xjh-将future状态改为完成
             this.complete(res.getResult());
         } else if (res.getStatus() == Response.CLIENT_TIMEOUT || res.getStatus() == Response.SERVER_TIMEOUT) {
+            // xjh-处理超时响应
             this.completeExceptionally(new TimeoutException(res.getStatus() == Response.SERVER_TIMEOUT, channel, res.getErrorMessage()));
         } else if(res.getStatus() == Response.SERIALIZATION_ERROR){
+            // xjh-处理序列化错误
             this.completeExceptionally(new SerializationException(channel, res.getErrorMessage()));
         }else {
+            // xjh-处理其他错误
             this.completeExceptionally(new RemotingException(channel, res.getErrorMessage()));
         }
 
@@ -274,6 +294,7 @@ public class DefaultFuture extends CompletableFuture<Object> {
                 return;
             }
 
+            // xjh-超时则调用notifyTimeout方法，此方法会调用DefaultFuture的received方法
             if (future.getExecutor() != null) {
                 future.getExecutor().execute(() -> notifyTimeout(future));
             } else {
@@ -283,11 +304,13 @@ public class DefaultFuture extends CompletableFuture<Object> {
 
         private void notifyTimeout(DefaultFuture future) {
             // create exception response.
+            // xjh-生成一个超时响应
             Response timeoutResponse = new Response(future.getId());
             // set timeout status.
             timeoutResponse.setStatus(future.isSent() ? Response.SERVER_TIMEOUT : Response.CLIENT_TIMEOUT);
             timeoutResponse.setErrorMessage(future.getTimeoutMessage(true));
             // handle response.
+            // xjh-调用received方法，并传入超时响应
             DefaultFuture.received(future.getChannel(), timeoutResponse, true);
         }
     }

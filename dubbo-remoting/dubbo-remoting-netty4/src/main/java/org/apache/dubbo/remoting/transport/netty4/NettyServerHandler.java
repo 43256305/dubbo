@@ -35,6 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * NettyServerHandler.
+ *
+ * xjh-server端的handler
  */
 @io.netty.channel.ChannelHandler.Sharable
 public class NettyServerHandler extends ChannelDuplexHandler {
@@ -42,6 +44,7 @@ public class NettyServerHandler extends ChannelDuplexHandler {
     /**
      * the cache for alive worker channel.
      * <ip:port, dubbo channel>
+     * xjh-记录当前所有channel
      */
     private final Map<String, Channel> channels = new ConcurrentHashMap<String, Channel>();
 

@@ -38,6 +38,7 @@ import static org.apache.dubbo.remoting.Constants.DEFAULT_CHARSET;
 
 /**
  * TelnetCodec
+ * xjh-提供了编解码能力
  */
 public class TelnetCodec extends TransportCodec {
 

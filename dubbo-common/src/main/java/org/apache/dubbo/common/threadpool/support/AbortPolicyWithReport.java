@@ -40,6 +40,7 @@ import static org.apache.dubbo.common.constants.CommonConstants.DUMP_DIRECTORY;
 /**
  * Abort Policy.
  * Log warn info when abort.
+ * xjh-线程池任务超出策略。继承AbortPolicy，抛出异常，加了dumpJStack等操作。
  */
 public class AbortPolicyWithReport extends ThreadPoolExecutor.AbortPolicy {
 

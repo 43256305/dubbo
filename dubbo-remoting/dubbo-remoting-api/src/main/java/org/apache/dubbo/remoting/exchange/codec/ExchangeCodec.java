@@ -47,6 +47,7 @@ import java.util.Date;
 
 /**
  * ExchangeCodec.
+ * xjh-在TelnetCodec的基础上提供了处理协议头的能力
  */
 public class ExchangeCodec extends TelnetCodec {
 
@@ -82,6 +83,7 @@ public class ExchangeCodec extends TelnetCodec {
     public Object decode(Channel channel, ChannelBuffer buffer) throws IOException {
         int readable = buffer.readableBytes();
         byte[] header = new byte[Math.min(readable, HEADER_LENGTH)];
+        // xjh-读取协议头长度的字节
         buffer.readBytes(header);
         return decode(channel, buffer, readable, header);
     }

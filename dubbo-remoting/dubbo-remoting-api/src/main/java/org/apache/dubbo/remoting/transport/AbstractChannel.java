@@ -24,6 +24,7 @@ import org.apache.dubbo.remoting.utils.PayloadDropper;
 
 /**
  * AbstractChannel
+ * xjh-channel基础类，只是在 send() 方法中检测了底层连接的状态，没有实现具体的发送消息的逻辑。
  */
 public abstract class AbstractChannel extends AbstractPeer implements Channel {
 
@@ -33,6 +34,7 @@ public abstract class AbstractChannel extends AbstractPeer implements Channel {
 
     @Override
     public void send(Object message, boolean sent) throws RemotingException {
+        // xjh-如果channel已经关闭则直接抛出异常
         if (isClosed()) {
             throw new RemotingException(this, "Failed to send message "
                     + (message == null ? "" : message.getClass().getName()) + ":" + PayloadDropper.getRequestWithoutData(message)

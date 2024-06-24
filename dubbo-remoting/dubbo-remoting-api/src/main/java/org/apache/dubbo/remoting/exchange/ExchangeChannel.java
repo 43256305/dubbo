@@ -50,6 +50,7 @@ public interface ExchangeChannel extends Channel {
 
     /**
      * send request.
+     * xjh-发送请求
      *
      * @param request
      * @return response future

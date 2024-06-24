@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * AbstractTimerTask
+ *
+ * xjh-三个重要实现类：HeartbeatTimerTask、CloseTimerTask、ReconnectTimerTask
  */
 public abstract class AbstractTimerTask implements TimerTask {
 

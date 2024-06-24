@@ -25,6 +25,8 @@ import org.apache.dubbo.remoting.RemotingException;
 
 /**
  * AbstractPeer
+ * xjh-Endpoint的抽象类，包含了handler/url，当前关闭状态。
+ * 四个重要实现类：AbstractClient/AbstractServer/AbstractEndpoint/AbstractChannel
  */
 public abstract class AbstractPeer implements Endpoint, ChannelHandler {
 

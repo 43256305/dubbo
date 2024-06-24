@@ -50,6 +50,7 @@ public class AllChannelHandler2 extends AllChannelHandler {
     public void received(Channel channel, Object message) throws RemotingException {
         ExecutorService executor = getPreferredExecutorService(message);
         try {
+            // xjh-将消息封装成ChannelEventRunnable交给线程池执行
             Future<?> future = executor.submit(new ChannelEventRunnable(channel, handler, ChannelState.RECEIVED, message));
             long timeout = this.url.getParameter("timeout", 1000) + 90;
             TIME_OUT_TIMER.newTimeout(t -> {

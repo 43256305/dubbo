@@ -32,6 +32,8 @@ import java.util.List;
 
 /**
  * NettyCodecAdapter.
+ *
+ * xjh-编解码器适配器，用于获取真正的编解码器
  */
 final public class NettyCodecAdapter {
 
@@ -63,6 +65,7 @@ final public class NettyCodecAdapter {
 
         @Override
         protected void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) throws Exception {
+            // xjh-创建NettyBackedChannelBuffer，将netty的ByteBuf封装成ChannelBuffer
             ChannelBuffer buffer = new NettyBackedChannelBuffer(out);
             Channel ch = ctx.channel();
             NettyChannel channel = NettyChannel.getOrAddChannel(ch, url, handler);
@@ -75,6 +78,7 @@ final public class NettyCodecAdapter {
         @Override
         protected void decode(ChannelHandlerContext ctx, ByteBuf input, List<Object> out) throws Exception {
 
+            // xjh-创建NettyBackedChannelBuffer
             ChannelBuffer message = new NettyBackedChannelBuffer(input);
 
             NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);

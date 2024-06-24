@@ -42,10 +42,15 @@ import static org.apache.dubbo.remoting.utils.UrlUtils.getIdleTimeout;
 
 /**
  * DefaultMessageClient
+ *
+ * xjh-HeaderExchangeClient 是 Client 装饰器，主要为其装饰的 Client 添加两个功能：
+ * 1.维持与 Server 的长连状态，这是通过定时发送心跳消息实现的；
+ * 2.在因故障掉线之后，进行重连，这是通过定时检查连接状态实现的。
  */
 public class HeaderExchangeClient implements ExchangeClient {
 
     private final Client client;
+    // xjh-HeaderExchangeChannel
     private final ExchangeChannel channel;
 
     private static final HashedWheelTimer IDLE_CHECK_TIMER = new HashedWheelTimer(
@@ -56,6 +61,7 @@ public class HeaderExchangeClient implements ExchangeClient {
     public HeaderExchangeClient(Client client, boolean startTimer) {
         Assert.notNull(client, "Client can't be null");
         this.client = client;
+        // xjh-构造一个HeaderExchangeChannel
         this.channel = new HeaderExchangeChannel(client);
 
         if (startTimer) {
@@ -187,26 +193,31 @@ public class HeaderExchangeClient implements ExchangeClient {
     }
 
     private void startHeartBeatTask(URL url) {
+        // xjh-如果client不提供心跳功能，则启动心跳任务。nettyClient是自带心跳检测机制的，所以不需要启动心跳任务。
         if (!client.canHandleIdle()) {
             AbstractTimerTask.ChannelProvider cp = () -> Collections.singletonList(HeaderExchangeClient.this);
             int heartbeat = getHeartbeat(url);
             long heartbeatTick = calculateLeastDuration(heartbeat);
             this.heartBeatTimerTask = new HeartbeatTimerTask(cp, heartbeatTick, heartbeat);
+            // xjh-心跳调度任务
             IDLE_CHECK_TIMER.newTimeout(heartBeatTimerTask, heartbeatTick, TimeUnit.MILLISECONDS);
         }
     }
 
     private void startReconnectTask(URL url) {
+        // xjh-是否需要重连
         if (shouldReconnect(url)) {
             AbstractTimerTask.ChannelProvider cp = () -> Collections.singletonList(HeaderExchangeClient.this);
             int idleTimeout = getIdleTimeout(url);
             long heartbeatTimeoutTick = calculateLeastDuration(idleTimeout);
             this.reconnectTimerTask = new ReconnectTimerTask(cp, heartbeatTimeoutTick, idleTimeout);
+            // xjh-重连调度任务
             IDLE_CHECK_TIMER.newTimeout(reconnectTimerTask, heartbeatTimeoutTick, TimeUnit.MILLISECONDS);
         }
     }
 
     private void doClose() {
+        // xjh-关闭逻辑，关闭这两个任务
         if (heartBeatTimerTask != null) {
             heartBeatTimerTask.cancel();
         }

@@ -41,6 +41,8 @@ import static org.apache.dubbo.common.constants.CommonConstants.READONLY_EVENT;
 
 /**
  * ExchangeReceiver
+ *
+ * xjh-ExchangeHandler的装饰器。提供了请求处理与响应返回的能力。
  */
 public class HeaderExchangeHandler implements ChannelHandlerDelegate {
 
@@ -57,6 +59,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
 
     static void handleResponse(Channel channel, Response response) throws RemotingException {
         if (response != null && !response.isHeartbeat()) {
+            // xjh-DefaultFuture处理response
             DefaultFuture.received(channel, response);
         }
     }
@@ -91,13 +94,16 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
             res.setErrorMessage("Fail to decode request due to: " + msg);
             res.setStatus(Response.BAD_REQUEST);
 
+            // xjh-返回响应
             channel.send(res);
             return;
         }
         // find handler by message class.
         Object msg = req.getData();
         try {
+            // xjh-处理请求
             CompletionStage<Object> future = handler.reply(channel, msg);
+            // xjh-请求处理完成则返回response
             future.whenComplete((appResult, t) -> {
                 try {
                     if (t == null) {
@@ -148,6 +154,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
         if (message instanceof Request) {
             Request request = (Request) message;
+            // xjh-记录请求发送时间戳
             DefaultFuture.sent(channel, request);
         }
         if (exception != null) {
@@ -165,6 +172,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
         final ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
+        // xjh-接受到request消息
         if (message instanceof Request) {
             // handle request.
             Request request = (Request) message;
@@ -177,6 +185,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                     handler.received(exchangeChannel, request.getData());
                 }
             }
+            // xjh-接受到response消息
         } else if (message instanceof Response) {
             handleResponse(channel, (Response) message);
         } else if (message instanceof String) {

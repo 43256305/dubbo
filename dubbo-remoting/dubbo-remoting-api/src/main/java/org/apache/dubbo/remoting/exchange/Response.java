@@ -93,6 +93,7 @@ public class Response {
 
     private String mErrorMsg;
 
+    // xjh-相应体
     private Object mResult;
 
     public Response() {

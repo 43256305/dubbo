@@ -52,6 +52,9 @@ import static org.apache.dubbo.common.constants.CommonConstants.SSL_ENABLED_KEY;
 
 /**
  * NettyServer.
+ *
+ * xjh-真正的Server实现。
+ * 从 AbstractPeer 开始往下，一路继承下来，NettyServer 拥有了 Endpoint、ChannelHandler 以及RemotingServer多个接口的能力，关联了一个 ChannelHandler 对象以及 Codec2 对象，并最终将数据委托给这两个对象进行处理
  */
 public class NettyServer extends AbstractServer implements RemotingServer {
 
@@ -91,12 +94,15 @@ public class NettyServer extends AbstractServer implements RemotingServer {
         bossGroup = createBossGroup();
         workerGroup = createWorkerGroup();
 
+        // xjh-创建handler
         final NettyServerHandler nettyServerHandler = createNettyServerHandler();
         channels = nettyServerHandler.getChannels();
 
+        // xjh-创建bootstrap
         initServerBootstrap(nettyServerHandler);
 
         // bind
+        // xjh-绑定端口地址，启动。
         ChannelFuture channelFuture = bootstrap.bind(getBindAddress());
         channelFuture.syncUninterruptibly();
         channel = channelFuture.channel();
@@ -114,12 +120,15 @@ public class NettyServer extends AbstractServer implements RemotingServer {
     }
 
     protected NettyServerHandler createNettyServerHandler() {
+        // xjh-NettyServer继承了AbstractPeer，而AbstractPeer又实现了ChannelHandler，所以把自己当作handler传入。
+        // 可以看到，这里面的handler是封装了很多层的。
         return new NettyServerHandler(getUrl(), this);
     }
 
     protected void initServerBootstrap(NettyServerHandler nettyServerHandler) {
         boolean keepalive = getUrl().getParameter(KEEP_ALIVE_KEY, Boolean.FALSE);
 
+        // xjh-创建ServerBootstrap，设置参数与handler
         bootstrap.group(bossGroup, workerGroup)
                 .channel(NettyEventLoopFactory.serverSocketChannelClass())
                 .option(ChannelOption.SO_REUSEADDR, Boolean.TRUE)
@@ -131,12 +140,14 @@ public class NettyServer extends AbstractServer implements RemotingServer {
                     protected void initChannel(SocketChannel ch) throws Exception {
                         // FIXME: should we use getTimeout()?
                         int idleTimeout = UrlUtils.getIdleTimeout(getUrl());
+                        // xjh-获取父类中的编解码器，参考AbstractEndpoint::getChannelCodec
                         NettyCodecAdapter adapter = new NettyCodecAdapter(getCodec(), getUrl(), NettyServer.this);
                         if (getUrl().getParameter(SSL_ENABLED_KEY, false)) {
                             ch.pipeline().addLast("negotiation",
                                     SslHandlerInitializer.sslServerHandler(getUrl(), nettyServerHandler));
                         }
                         ch.pipeline()
+                                // xjh-编解码器与IdleStateHandler
                                 .addLast("decoder", adapter.getDecoder())
                                 .addLast("encoder", adapter.getEncoder())
                                 .addLast("server-idle-handler", new IdleStateHandler(0, 0, idleTimeout, MILLISECONDS))
