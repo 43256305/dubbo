@@ -49,6 +49,8 @@ import static org.apache.dubbo.rpc.protocol.dubbo.Constants.DEFAULT_DECODE_IN_IO
 
 /**
  * Dubbo codec.
+ *
+ * xjh-默认编解码器，在ExchangeCodec的基础上提供了编码/解码请求体的功能
  */
 public class DubboCodec extends ExchangeCodec {
 
@@ -183,6 +185,7 @@ public class DubboCodec extends ExchangeCodec {
     protected void encodeRequestData(Channel channel, ObjectOutput out, Object data, String version) throws IOException {
         RpcInvocation inv = (RpcInvocation) data;
 
+        // xjh-将RpcInvocation的各项信息写入request
         out.writeUTF(version);
         // https://github.com/apache/dubbo/issues/6138
         String serviceName = inv.getAttachment(INTERFACE_KEY);

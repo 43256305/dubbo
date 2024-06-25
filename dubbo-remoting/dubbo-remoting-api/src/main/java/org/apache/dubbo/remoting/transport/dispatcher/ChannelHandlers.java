@@ -25,6 +25,7 @@ import org.apache.dubbo.remoting.transport.MultiMessageHandler;
 
 // xjh-单例模式，获取channelHandler
 // handler之间关系如下：NettyServerHandler包含NettyServer包含MultiMessageHandler包含HeartbeatHandler包含AllChannelHandler包含DecodeHandler包含HeaderExchangeHandler
+// 其中，NettyServerHandler/NettyServer/MultiMessageHandler/HeartbeatHandler/AllChannelHandler都是I/O线程执行，而到了AllChannelHandler会将消息交给线程池执行，所以DecodeHandler/HeaderExchangeHandler都是业务线程执行
 public class ChannelHandlers {
 
     private static ChannelHandlers INSTANCE = new ChannelHandlers();

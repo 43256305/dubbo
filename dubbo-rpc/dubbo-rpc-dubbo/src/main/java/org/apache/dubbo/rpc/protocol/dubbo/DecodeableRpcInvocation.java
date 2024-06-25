@@ -52,6 +52,7 @@ import static org.apache.dubbo.rpc.Constants.SERIALIZATION_ID_KEY;
 import static org.apache.dubbo.rpc.Constants.SERIALIZATION_SECURITY_CHECK_KEY;
 import static org.apache.dubbo.rpc.protocol.dubbo.CallbackServiceCodec.decodeInvocationArgument;
 
+// xjh-用来解码的类。
 public class DecodeableRpcInvocation extends RpcInvocation implements Codec, Decodeable {
 
     private static final Logger log = LoggerFactory.getLogger(DecodeableRpcInvocation.class);

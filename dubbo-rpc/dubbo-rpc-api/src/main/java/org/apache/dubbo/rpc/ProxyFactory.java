@@ -24,12 +24,16 @@ import static org.apache.dubbo.rpc.Constants.PROXY_KEY;
 
 /**
  * ProxyFactory. (API/SPI, Singleton, ThreadSafe)
+ *
+ * xjh-代理工厂
  */
 @SPI("javassist")
 public interface ProxyFactory {
 
     /**
      * create proxy.
+     *
+     * xjh-为传入的invoker创建代理对象
      *
      * @param invoker
      * @return proxy

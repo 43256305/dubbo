@@ -44,6 +44,8 @@ import static org.apache.dubbo.rpc.Constants.TOKEN_KEY;
 /**
  * RPC Invocation.
  *
+ * xjh-服务调用相关参数，这些参数将会写入请求体中
+ *
  * @serial Don't change the class name and properties.
  */
 public class RpcInvocation implements Invocation, Serializable {

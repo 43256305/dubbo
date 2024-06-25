@@ -25,6 +25,8 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * ExchangeHandlerAdapter
+ *
+ * xjh-重写了ExchangeHandler的reply方法，将request参数变成msg
  */
 public abstract class ExchangeHandlerAdapter extends TelnetHandlerAdapter implements ExchangeHandler {
 

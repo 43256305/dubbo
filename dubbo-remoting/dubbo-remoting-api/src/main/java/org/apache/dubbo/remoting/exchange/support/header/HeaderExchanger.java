@@ -43,6 +43,7 @@ public class HeaderExchanger implements Exchanger {
 
     @Override
     public ExchangeServer bind(URL url, ExchangeHandler handler) throws RemotingException {
+        // xjh-HeaderExchangeServer中封装了NettyServer
         return new HeaderExchangeServer(Transporters.bind(url, new DecodeHandler(new HeaderExchangeHandler(handler))));
     }
 

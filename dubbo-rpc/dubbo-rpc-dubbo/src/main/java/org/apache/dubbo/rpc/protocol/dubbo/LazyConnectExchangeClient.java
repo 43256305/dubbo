@@ -42,6 +42,8 @@ import static org.apache.dubbo.rpc.protocol.dubbo.Constants.LAZY_REQUEST_WITH_WA
 
 /**
  * dubbo protocol support class.
+ * xjh-装饰器模式，在ExchangeClient的基础上增加了懒加载功能。
+ * 持有的ExchangeClient只有当发送请求的时候才会init
  */
 @SuppressWarnings("deprecation")
 final class LazyConnectExchangeClient implements ExchangeClient {
@@ -79,6 +81,7 @@ final class LazyConnectExchangeClient implements ExchangeClient {
             if (client != null) {
                 return;
             }
+            // xjh-建立连接
             this.client = Exchangers.connect(url, requestHandler);
         } finally {
             connectLock.unlock();
@@ -109,6 +112,7 @@ final class LazyConnectExchangeClient implements ExchangeClient {
     @Override
     public CompletableFuture<Object> request(Object request, int timeout) throws RemotingException {
         warning();
+        // xjh-只要当真正request的时候才initClient
         initClient();
         return client.request(request, timeout);
     }

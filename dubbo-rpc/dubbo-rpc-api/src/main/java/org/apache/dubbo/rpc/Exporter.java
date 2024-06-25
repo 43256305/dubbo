@@ -18,6 +18,7 @@ package org.apache.dubbo.rpc;
 
 /**
  * Exporter. (API/SPI, Prototype, ThreadSafe)
+ * xjh-Exporter就是在Invoker额外添加了一层
  *
  * @see org.apache.dubbo.rpc.Protocol#export(Invoker)
  * @see org.apache.dubbo.rpc.ExporterListener
@@ -27,6 +28,8 @@ public interface Exporter<T> {
 
     /**
      * get invoker.
+     *
+     * xjh-获取invoker
      *
      * @return invoker
      */

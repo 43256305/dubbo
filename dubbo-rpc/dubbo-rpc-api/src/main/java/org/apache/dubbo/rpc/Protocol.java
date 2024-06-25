@@ -44,6 +44,8 @@ public interface Protocol {
      * export the same URL<br>
      * 3. Invoker instance is passed in by the framework, protocol needs not to care <br>
      *
+     * xjh-暴露invoker，用于服务器端调用真正的业务方法
+     *
      * @param <T>     Service type
      * @param invoker Service invoker
      * @return exporter reference for exported service, useful for unexport the service later
@@ -60,6 +62,8 @@ public interface Protocol {
      * protocol sends remote request in the `Invoker` implementation. <br>
      * 3. When there's check=false set in URL, the implementation must not throw exception but try to recover when
      * connection fails.
+     *
+     * xjh-根据type与url引用一个invoker，用于客户端指向其他机器上的远程服务
      *
      * @param <T>  Service type
      * @param type Service class

@@ -24,6 +24,8 @@ import java.util.stream.Stream;
 /**
  * Invocation. (API, Prototype, NonThreadSafe)
  *
+ * xjh-获取服务调用相关参数接口
+ *
  * @serial Don't change the class name and package name.
  * @see org.apache.dubbo.rpc.Invoker#invoke(Invocation)
  * @see org.apache.dubbo.rpc.RpcInvocation
@@ -36,6 +38,7 @@ public interface Invocation {
 
     /**
      * get method name.
+     * xjh-调用方法名
      *
      * @return method name.
      * @serial

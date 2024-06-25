@@ -30,12 +30,15 @@ public interface Invoker<T> extends Node {
     /**
      * get service interface.
      *
+     * xjh-服务接口
+     *
      * @return service interface.
      */
     Class<T> getInterface();
 
     /**
      * invoke.
+     * xjh-进行一次调用
      *
      * @param invocation
      * @return result

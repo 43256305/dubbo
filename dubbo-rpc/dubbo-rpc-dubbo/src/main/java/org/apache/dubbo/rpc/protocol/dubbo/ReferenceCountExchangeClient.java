@@ -36,15 +36,19 @@ import static org.apache.dubbo.rpc.protocol.dubbo.Constants.LAZY_CONNECT_INITIAL
 
 /**
  * dubbo protocol support class.
+ *
+ * xjh-装饰器模式，在ExchangeClient的基础上增加了引用计数的功能。
  */
 @SuppressWarnings("deprecation")
 final class ReferenceCountExchangeClient implements ExchangeClient {
 
     private static final Logger logger = LoggerFactory.getLogger(ReferenceCountExchangeClient.class);
     private final URL url;
+    // xjh-对当前client的引用数量
     private final AtomicInteger referenceCount = new AtomicInteger(0);
     private final AtomicInteger disconnectCount = new AtomicInteger(0);
     private final Integer warningPeriod = 50;
+    // xjh-真正的client
     private ExchangeClient client;
 
     public ReferenceCountExchangeClient(ExchangeClient client) {
@@ -173,6 +177,7 @@ final class ReferenceCountExchangeClient implements ExchangeClient {
      * @param closeAll
      */
     private void closeInternal(int timeout, boolean closeAll) {
+        // xjh-如果引用为0了，则关闭客户端
         if (closeAll || referenceCount.decrementAndGet() <= 0) {
             if (timeout == 0) {
                 client.close();
@@ -181,6 +186,7 @@ final class ReferenceCountExchangeClient implements ExchangeClient {
                 client.close(timeout);
             }
 
+            // 将客户端替代为LazyConnectExchangeClient
             replaceWithLazyClient();
         }
     }
@@ -211,6 +217,7 @@ final class ReferenceCountExchangeClient implements ExchangeClient {
                     // .addParameter(RECONNECT_KEY, Boolean.FALSE)
                     .addParameter(SEND_RECONNECT_KEY, Boolean.TRUE.toString());
             // .addParameter(LazyConnectExchangeClient.REQUEST_WITH_WARNING_KEY, true);
+            // xjh-创建一个LazyConnectExchangeClient
             client = new LazyConnectExchangeClient(lazyUrl, client.getExchangeHandler());
         }
     }

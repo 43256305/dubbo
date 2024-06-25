@@ -101,7 +101,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         // find handler by message class.
         Object msg = req.getData();
         try {
-            // xjh-处理请求
+            // xjh-处理请求，传入请求体
             CompletionStage<Object> future = handler.reply(channel, msg);
             // xjh-请求处理完成则返回response
             future.whenComplete((appResult, t) -> {
@@ -182,6 +182,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                 if (request.isTwoWay()) {
                     handleRequest(exchangeChannel, request);
                 } else {
+                    // 这里将Request类型的改为了直接传递请求体到下个handler
                     handler.received(exchangeChannel, request.getData());
                 }
             }

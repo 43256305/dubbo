@@ -40,6 +40,8 @@ import java.util.function.Function;
  * 2. {@link AppResponse}, it inevitably inherits {@link CompletionStage} and {@link Future}, but you should never treat AppResponse as a type of Future,
  *    instead, it is a normal concrete type.
  *
+ * xjh-调用返回对象
+ *
  * @serial Don't change the class name and package name.
  * @see org.apache.dubbo.rpc.Invoker#invoke(Invocation)
  * @see AppResponse

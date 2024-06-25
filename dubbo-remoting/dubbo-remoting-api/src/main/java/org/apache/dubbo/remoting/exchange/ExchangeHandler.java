@@ -24,7 +24,8 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * ExchangeHandler. (API, Prototype, ThreadSafe)
- * xjh-处理消息的交换，如request的处理与response的返回。
+ * xjh-提供了真正处理request并返回CompletableFuture回调的方法，传入request
+ * ExchangeHandler的调用顺序如下：HeaderExchangeHandler-》DubboProtocol内部类-》真正的业务方法
  */
 public interface ExchangeHandler extends ChannelHandler, TelnetHandler {
 

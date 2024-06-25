@@ -55,6 +55,7 @@ public class DecodeHandler extends AbstractChannelHandlerDelegate {
     private void decode(Object message) {
         if (message instanceof Decodeable) {
             try {
+                // xjh-DecodeableRpcInvocation解码
                 ((Decodeable) message).decode();
                 if (log.isDebugEnabled()) {
                     log.debug("Decode decodeable message " + message.getClass().getName());
