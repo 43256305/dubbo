@@ -30,6 +30,8 @@ import java.util.Set;
  * table, and it is useful when accessed frequently.
  * <p></p>
  * This design is learning from {@see io.netty.util.concurrent.FastThreadLocal} which is in Netty.
+ * xjh-保存当前线程信息。相比java提供的ThreadLocal，性能更高。底层使用InternalThreadLocalMap保存数据，而InternalThreadLocalMap使用的是数组来保存数据，每一个InternalThreadLocal
+ * 都有一个index，通过index来获取变量。相比ThreadLocal底层使用map来保存每一个线程的数据，不需要计算hash值，性能更高。
  */
 public class InternalThreadLocal<V> {
 
@@ -117,6 +119,7 @@ public class InternalThreadLocal<V> {
     @SuppressWarnings("unchecked")
     public final V get() {
         InternalThreadLocalMap threadLocalMap = InternalThreadLocalMap.get();
+        // xjh-在数组中定位index位置的元素并返回
         Object v = threadLocalMap.indexedVariable(index);
         if (v != InternalThreadLocalMap.UNSET) {
             return (V) v;

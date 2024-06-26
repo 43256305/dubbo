@@ -27,6 +27,8 @@ import org.apache.dubbo.rpc.RpcException;
 /**
  * @see org.apache.dubbo.rpc.protocol.ProtocolFilterWrapper
  *
+ * xjh-filter节点
+ *
  */
 class FilterNode<T> implements Invoker<T>{
     private final Invoker<T> invoker;
@@ -58,6 +60,7 @@ class FilterNode<T> implements Invoker<T>{
     public Result invoke(Invocation invocation) throws RpcException {
         Result asyncResult;
         try {
+            // 调用filter，filter内部会调用下一个filter
             asyncResult = filter.invoke(next, invocation);
         } catch (Exception e) {
             if (filter instanceof ListenableFilter) {
@@ -78,13 +81,16 @@ class FilterNode<T> implements Invoker<T>{
         } finally {
 
         }
+        // xjh-注册调用完成的回调方法
         return asyncResult.whenCompleteWithContext((r, t) -> {
+            // xjh-如果属于ListenableFilter
             if (filter instanceof ListenableFilter) {
                 ListenableFilter listenableFilter = ((ListenableFilter) filter);
                 Filter.Listener listener = listenableFilter.listener(invocation);
                 try {
                     if (listener != null) {
                         if (t == null) {
+                            // xjh-调用onResponse
                             listener.onResponse(r, invoker, invocation);
                         } else {
                             listener.onError(t, invoker, invocation);

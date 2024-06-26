@@ -51,6 +51,7 @@ import static org.apache.dubbo.rpc.Constants.RETURN_KEY;
  * For example: A invokes B, then B invokes C. On service B, RpcContext saves invocation info from A to B before B
  * starts invoking C, and saves invocation info from B to C after B invokes C.
  *
+ * xjh-保存线程上下文信息。每次发送请求或者接受请求，信息都会随之变化。
  * @export
  * @see org.apache.dubbo.rpc.filter.ContextFilter
  */
@@ -58,6 +59,7 @@ public class RpcContext {
 
     /**
      * use internal thread local to improve performance
+     * xjh-存储发送请求时的上下文信息
      */
     // FIXME REQUEST_CONTEXT
     private static final InternalThreadLocal<RpcContext> LOCAL = new InternalThreadLocal<RpcContext>() {
@@ -67,6 +69,7 @@ public class RpcContext {
         }
     };
 
+    // xjh-存储接受请求时的上下文信息
     // FIXME RESPONSE_CONTEXT
     private static final InternalThreadLocal<RpcContext> SERVER_LOCAL = new InternalThreadLocal<RpcContext>() {
         @Override
@@ -75,13 +78,16 @@ public class RpcContext {
         }
     };
 
+    // xjh-用于记录调用上下文的附加信息，这些信息会被添加到 Invocation 中，并传递到远端节点。
     protected final Map<String, Object> attachments = new HashMap<>();
+    // xjh-用来记录上下文的键值对信息，但是不会被传递到远端节点。
     private final Map<String, Object> values = new HashMap<String, Object>();
 
     private List<URL> urls;
 
     private URL url;
 
+    // xjh-方法名
     private String methodName;
 
     private Class<?>[] parameterTypes;

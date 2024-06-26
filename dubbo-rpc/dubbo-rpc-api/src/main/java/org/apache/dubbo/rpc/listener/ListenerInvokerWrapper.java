@@ -30,6 +30,8 @@ import java.util.List;
 
 /**
  * ListenerInvoker
+ *
+ * xjh-invoker装饰器，会在invoker调用后调用listeners
  */
 public class ListenerInvokerWrapper<T> implements Invoker<T> {
 

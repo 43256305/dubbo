@@ -133,11 +133,13 @@ final class HeaderExchangeChannel implements ExchangeChannel {
         // create request.
         Request req = new Request();
         req.setVersion(Version.getProtocolVersion());
+        // twoWay表示需要返回值
         req.setTwoWay(true);
         req.setData(request);
-        // xjh-返回一个DefaultFuture
+        // xjh-返回一个DefaultFuture，这里创建了定时任务，检测是否超时
         DefaultFuture future = DefaultFuture.newFuture(channel, req, timeout, executor);
         try {
+            // 底层调用的还是send方法
             channel.send(req);
         } catch (RemotingException e) {
             future.cancel();

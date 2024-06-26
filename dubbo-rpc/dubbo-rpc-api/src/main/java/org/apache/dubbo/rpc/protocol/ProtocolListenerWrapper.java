@@ -38,6 +38,7 @@ import static org.apache.dubbo.common.constants.CommonConstants.INVOKER_LISTENER
 
 /**
  * ListenerProtocol
+ * xjh-protocol装饰器，在其 export() 方法和 refer() 方法中，会分别在原有 Invoker 基础上封装一层 ListenerExporterWrapper 和 ListenerInvokerWrapper
  */
 @Activate(order = 200)
 public class ProtocolListenerWrapper implements Protocol {

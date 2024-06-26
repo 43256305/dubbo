@@ -53,6 +53,7 @@ public class AppResponse implements Result {
 
     private static final long serialVersionUID = -6925924956850004727L;
 
+    // xjh-保存业务结果
     private Object result;
 
     private Throwable exception;

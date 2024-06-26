@@ -20,6 +20,7 @@ import org.apache.dubbo.common.extension.SPI;
 
 /**
  * InvokerListener. (SPI, Singleton, ThreadSafe)
+ * xjh-invoker的refer方法的回调接口
  */
 @SPI
 public interface InvokerListener {

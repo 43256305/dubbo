@@ -45,6 +45,8 @@ import static org.apache.dubbo.common.utils.ReflectUtils.defaultReturn;
  * AsyncRpcResult does not contain any concrete value (except the underlying value bring by CompletableFuture), consider it as a status transfer node.
  * {@link #getValue()} and {@link #getException()} are all inherited from {@link Result} interface, implementing them are mainly
  * for compatibility consideration. Because many legacy {@link Filter} implementation are most possibly to call getValue directly.
+ *
+ * xjh-代表一个未完成的远程调用。保存了一些此调用相关的信息，如RpcContext and Invocation，当请求结束时，它可以保证所有上下文信息保持和调用开始时的一致性。
  */
 public class AsyncRpcResult implements Result {
     private static final Logger logger = LoggerFactory.getLogger(AsyncRpcResult.class);
@@ -59,6 +61,7 @@ public class AsyncRpcResult implements Result {
 
     private Invocation invocation;
 
+    // xjh-封装了异步调用的返回值
     private CompletableFuture<AppResponse> responseFuture;
 
     public AsyncRpcResult(CompletableFuture<AppResponse> future, Invocation invocation) {
@@ -174,10 +177,12 @@ public class AsyncRpcResult implements Result {
 
     @Override
     public Result get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        // xjh-如果是ThreadlessExecutor，则调用waitAndDrain
         if (executor != null && executor instanceof ThreadlessExecutor) {
             ThreadlessExecutor threadlessExecutor = (ThreadlessExecutor) executor;
             threadlessExecutor.waitAndDrain();
         }
+        // 普通线程池，则调用get阻塞
         return responseFuture.get(timeout, unit);
     }
 
@@ -192,6 +197,7 @@ public class AsyncRpcResult implements Result {
     }
 
     public Result whenCompleteWithContext(BiConsumer<Result, Throwable> fn) {
+        // xjh-注册一个请求结束的回调。
         this.responseFuture = this.responseFuture.whenComplete((v, t) -> {
             beforeContext.accept(v, t);
             fn.accept(v, t);
@@ -287,8 +293,10 @@ public class AsyncRpcResult implements Result {
 
     private RpcContext tmpServerContext;
     private BiConsumer<Result, Throwable> beforeContext = (appResponse, t) -> {
+        // xjh-将当前线程的上下文暂存
         tmpContext = RpcContext.getContext();
         tmpServerContext = RpcContext.getServerContext();
+        // 将构造函数中存储的 RpcContext 设置到当前线程中
         RpcContext.restoreContext(storedContext);
         RpcContext.restoreServerContext(storedServerContext);
     };

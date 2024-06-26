@@ -113,6 +113,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                         res.setStatus(Response.SERVICE_ERROR);
                         res.setErrorMessage(StringUtils.toString(t));
                     }
+                    // 返回response
                     channel.send(res);
                 } catch (RemotingException e) {
                     logger.warn("Send result to consumer failed, channel is " + channel + ", msg is " + e);
@@ -179,9 +180,10 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
             if (request.isEvent()) {
                 handlerEvent(channel, request);
             } else {
+                // 需要关注返回值的请求
                 if (request.isTwoWay()) {
                     handleRequest(exchangeChannel, request);
-                } else {
+                } else { // 不需要关注返回值的请求
                     // 这里将Request类型的改为了直接传递请求体到下个handler
                     handler.received(exchangeChannel, request.getData());
                 }

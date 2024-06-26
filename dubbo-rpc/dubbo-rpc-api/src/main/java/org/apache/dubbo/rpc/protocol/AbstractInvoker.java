@@ -56,12 +56,16 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
+    // xjh-接口类型
     private final Class<T> type;
 
+    // 与当前 Invoker 关联的 URL 对象，其中包含了全部的配置信息
     private final URL url;
 
+    // 当前 Invoker 关联的一些附加信息，这些附加信息可以来自关联的 URL
     private final Map<String, Object> attachment;
 
+    // xjh-标识当前invoker是否可用
     private volatile boolean available = true;
 
     private AtomicBoolean destroyed = new AtomicBoolean(false);
@@ -143,6 +147,7 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
             logger.warn("Invoker for service " + this + " on consumer " + NetUtils.getLocalHost() + " is destroyed, "
                     + ", dubbo version is " + Version.getVersion() + ", this invoker should not be used any longer");
         }
+        // xjh-invocation设置相关信息
         RpcInvocation invocation = (RpcInvocation) inv;
         invocation.setInvoker(this);
         if (CollectionUtils.isNotEmptyMap(attachment)) {
@@ -160,6 +165,7 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
             invocation.addObjectAttachments(contextAttachments);
         }
 
+        // xjh-同步还是异步调用
         invocation.setInvokeMode(RpcUtils.getInvokeMode(url, invocation));
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
 
@@ -170,6 +176,7 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
 
         AsyncRpcResult asyncResult;
         try {
+            // xjh-调用具体实现的doInvoke方法，默认为DubboProtocol::doInvoke方法
             asyncResult = (AsyncRpcResult) doInvoke(invocation);
         } catch (InvocationTargetException e) { // biz exception
             Throwable te = e.getTargetException();

@@ -28,6 +28,7 @@ public final class InternalThreadLocalMap {
 
     private Object[] indexedVariables;
 
+    // xjh-java原生的ThreadLocal，当不使用InternalThread时，会使用原生ThreadLocal来存储数据
     private static ThreadLocal<InternalThreadLocalMap> slowThreadLocalMap = new ThreadLocal<InternalThreadLocalMap>();
 
     private static final AtomicInteger NEXT_INDEX = new AtomicInteger();
@@ -36,9 +37,11 @@ public final class InternalThreadLocalMap {
 
     public static InternalThreadLocalMap getIfSet() {
         Thread thread = Thread.currentThread();
+        // xjh-如果当前线程为InternalThread类型，则返回InternalThreadLocalMap
         if (thread instanceof InternalThread) {
             return ((InternalThread) thread).threadLocalMap();
         }
+        // xjh-如果线程为java的Thread类型，则返回slowThreadLocalMap
         return slowThreadLocalMap.get();
     }
 

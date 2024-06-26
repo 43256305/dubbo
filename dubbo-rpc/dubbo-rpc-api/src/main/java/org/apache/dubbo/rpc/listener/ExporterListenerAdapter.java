@@ -22,6 +22,7 @@ import org.apache.dubbo.rpc.RpcException;
 
 /**
  * ExporterListenerAdapter
+ * xjh-exporter的export的回调
  */
 public abstract class ExporterListenerAdapter implements ExporterListener {
 

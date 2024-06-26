@@ -27,6 +27,7 @@ import java.util.List;
 
 /**
  * ListenerExporter
+ * xjh-Exporter装饰器，会在exporter调用export方法之后调用ExporterListener的exported方法
  */
 public class ListenerExporterWrapper<T> implements Exporter<T> {
 

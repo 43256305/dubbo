@@ -81,17 +81,19 @@ public class DecodeableRpcResult extends AppResponse implements Codec, Decodeabl
             log.debug("Decoding in thread -- [" + thread.getName() + "#" + thread.getId() + "]");
         }
 
+        // xjh-获取序列化器，执行反序列化
         ObjectInput in = CodecSupport.getSerialization(channel.getUrl(), serializationType)
                 .deserialize(channel.getUrl(), input);
 
+        // 根据不同的返回值类型处理
         byte flag = in.readByte();
         switch (flag) {
-            case DubboCodec.RESPONSE_NULL_VALUE:
+            case DubboCodec.RESPONSE_NULL_VALUE:  // 空返回值类型
                 break;
-            case DubboCodec.RESPONSE_VALUE:
+            case DubboCodec.RESPONSE_VALUE:  // 正常处理
                 handleValue(in);
                 break;
-            case DubboCodec.RESPONSE_WITH_EXCEPTION:
+            case DubboCodec.RESPONSE_WITH_EXCEPTION: // 异常返回值
                 handleException(in);
                 break;
             case DubboCodec.RESPONSE_NULL_VALUE_WITH_ATTACHMENTS:
@@ -145,11 +147,13 @@ public class DecodeableRpcResult extends AppResponse implements Codec, Decodeabl
         try {
             Type[] returnTypes;
             if (invocation instanceof RpcInvocation) {
+                // xjh-获取返回值类型
                 returnTypes = ((RpcInvocation) invocation).getReturnTypes();
             } else {
                 returnTypes = RpcUtils.getReturnTypes(invocation);
             }
             Object value = null;
+            // xjh-根据返回值类型获取值
             if (ArrayUtils.isEmpty(returnTypes)) {
                 // This almost never happens?
                 value = in.readObject();
