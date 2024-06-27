@@ -69,6 +69,7 @@ public class InvokerInvocationHandler implements InvocationHandler {
         }
         String methodName = method.getName();
         Class<?>[] parameterTypes = method.getParameterTypes();
+        // xjh-java类自带的方法直接调用
         if (parameterTypes.length == 0) {
             if ("toString".equals(methodName)) {
                 return invoker.toString();
@@ -81,6 +82,7 @@ public class InvokerInvocationHandler implements InvocationHandler {
         } else if (parameterTypes.length == 1 && "equals".equals(methodName)) {
             return invoker.equals(args[0]);
         }
+        // xjh-创建RpcInvocation对象，后面会作为远程RPC调用的参数
         RpcInvocation rpcInvocation = new RpcInvocation(method, invoker.getInterface().getName(), protocolServiceKey, args);
         String serviceKey = invoker.getUrl().getServiceKey();
         rpcInvocation.setTargetServiceUniqueName(serviceKey);
@@ -93,6 +95,7 @@ public class InvokerInvocationHandler implements InvocationHandler {
             rpcInvocation.put(Constants.METHOD_MODEL, consumerModel.getMethodModel(method));
         }
 
+        // xjh-调用invoke方法，发起远程调用，拿到AsyncRpcResult之后，调用recreate()方法获取响应结果(或是Future)
         return invoker.invoke(rpcInvocation).recreate();
     }
 }

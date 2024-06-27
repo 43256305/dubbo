@@ -34,6 +34,7 @@ import static org.apache.dubbo.rpc.Constants.INTERFACES;
 
 /**
  * AbstractProxyFactory
+ * xjh-代理工厂
  */
 public abstract class AbstractProxyFactory implements ProxyFactory {
     private static final Class<?>[] INTERNAL_INTERFACES = new Class<?>[]{
@@ -47,6 +48,7 @@ public abstract class AbstractProxyFactory implements ProxyFactory {
 
     @Override
     public <T> T getProxy(Invoker<T> invoker, boolean generic) throws RpcException {
+        // xjh-保存要代理的接口
         Set<Class<?>> interfaces = new HashSet<>();
 
         String config = invoker.getUrl().getParameter(INTERFACES);
@@ -58,6 +60,7 @@ public abstract class AbstractProxyFactory implements ProxyFactory {
             }
         }
 
+        // xjh-针对泛化接口的处理
         if (generic) {
             if (GenericService.class.equals(invoker.getInterface()) || !GenericService.class.isAssignableFrom(invoker.getInterface())) {
                 interfaces.add(com.alibaba.dubbo.rpc.service.GenericService.class);
@@ -75,6 +78,7 @@ public abstract class AbstractProxyFactory implements ProxyFactory {
         interfaces.add(invoker.getInterface());
         interfaces.addAll(Arrays.asList(INTERNAL_INTERFACES));
 
+        // xjh-使用javassist或者jdk动态代理来创建代理对象
         return getProxy(invoker, interfaces.toArray(new Class<?>[0]));
     }
 

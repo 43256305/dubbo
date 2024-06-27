@@ -52,6 +52,7 @@ public interface ProxyFactory {
 
     /**
      * create invoker.
+     * xjh-为传入的proxy创建invoker
      *
      * @param <T>
      * @param proxy
