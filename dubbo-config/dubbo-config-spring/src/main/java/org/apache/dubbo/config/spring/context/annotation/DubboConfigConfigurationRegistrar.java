@@ -51,6 +51,7 @@ public class DubboConfigConfigurationRegistrar implements ImportBeanDefinitionRe
 
         boolean multiple = attributes.getBoolean("multiple");
 
+        // xjh-引入了DubboConfigConfiguration类，注入配置beans
         // Single Config Bindings
         registerBeans(registry, DubboConfigConfiguration.Single.class);
 
@@ -58,6 +59,7 @@ public class DubboConfigConfigurationRegistrar implements ImportBeanDefinitionRe
             registerBeans(registry, DubboConfigConfiguration.Multiple.class);
         }
 
+        // xjh-重点，注入了dubbo的一些基础设施
         // Since 2.7.6
         registerCommonBeans(registry);
     }

@@ -63,6 +63,9 @@ import static org.springframework.util.StringUtils.hasText;
  * {@link org.springframework.beans.factory.config.BeanPostProcessor} implementation
  * that Consumer service {@link Reference} annotated fields
  *
+ * xjh-将@DubboReference注解的属性注入bean中，dubbo与spring的结合。
+ * 继承了AbstractAnnotationBeanPostProcessor，此类就是spring用于自定义的注解注入的，原理与@Autowired的注入差不多。
+ *
  * @see DubboReference
  * @see Reference
  * @see com.alibaba.dubbo.config.annotation.Reference
@@ -138,30 +141,39 @@ public class ReferenceAnnotationBeanPostProcessor extends AbstractAnnotationBean
     }
 
     @Override
+    // xjh-获取需要注入的类
     protected Object doGetInjectedBean(AnnotationAttributes attributes, Object bean, String beanName, Class<?> injectedType,
                                        InjectionMetadata.InjectedElement injectedElement) throws Exception {
         /**
          * The name of bean that annotated Dubbo's {@link Service @Service} in local Spring {@link ApplicationContext}
+         * xjh-注解了@DubboService的beanName
          */
         String referencedBeanName = buildReferencedBeanName(attributes, injectedType);
 
         /**
          * The name of bean that is declared by {@link Reference @Reference} annotation injection
+         * xjh-注解了@DubboReference的beanName
          */
         String referenceBeanName = getReferenceBeanName(attributes, injectedType);
 
         referencedBeanNameIdx.computeIfAbsent(referencedBeanName, k -> new TreeSet<String>()).add(referenceBeanName);
 
+        // xjh-构造ReferenceBean
         ReferenceBean referenceBean = buildReferenceBeanIfAbsent(referenceBeanName, attributes, injectedType);
 
+        // xjh-判断是否是本地服务
         boolean localServiceBean = isLocalServiceBean(referencedBeanName, referenceBean, attributes);
 
+        // xjh-如果为本地bean，从本地容器获取bean并export
         prepareReferenceBean(referencedBeanName, referenceBean, localServiceBean);
 
+        // 注册ReferenceBean到本地容器，如果为本地bean，则注册别名即可。如果为remote bean，则需要生成singleton
         registerReferenceBean(referencedBeanName, referenceBean, localServiceBean, referenceBeanName);
 
+        // 缓存referenceBean
         cacheInjectedReferenceBean(referenceBean, injectedElement);
 
+        // referenceBean.get()获取到的为Dubbo中ProxyFactory代理生成的对象，并对容器中的BeanPostProcessor执行回调方法
         return getBeanFactory().applyBeanPostProcessorsAfterInitialization(referenceBean.get(), referenceBeanName);
     }
 
@@ -325,6 +337,7 @@ public class ReferenceAnnotationBeanPostProcessor extends AbstractAnnotationBean
         //  Issue : https://github.com/apache/dubbo/issues/6224
         if (localServiceBean) { // If the local @Service Bean exists
             referenceBean.setInjvm(Boolean.TRUE);
+            // xjh-从上下文获取bean，并且export
             exportServiceBeanIfNecessary(referencedBeanName); // If the referenced ServiceBean exits, export it immediately
         }
     }
@@ -332,6 +345,7 @@ public class ReferenceAnnotationBeanPostProcessor extends AbstractAnnotationBean
 
     private void exportServiceBeanIfNecessary(String referencedBeanName) {
         if (existsServiceBean(referencedBeanName)) {
+            // xjh-从本地spring上下文中获取bean
             ServiceBean serviceBean = getServiceBean(referencedBeanName);
             if (!serviceBean.isExported()) {
                 serviceBean.export();
@@ -372,6 +386,7 @@ public class ReferenceAnnotationBeanPostProcessor extends AbstractAnnotationBean
                     .create(attributes, applicationContext)
                     .interfaceClass(referencedType)
                     .beanName(referenceBeanName);
+            // xjh-构造referenceBean
             referenceBean = beanBuilder.build();
             referenceBeanCache.put(referenceBeanName, referenceBean);
         } else if (!referencedType.isAssignableFrom(referenceBean.getInterfaceClass())) {

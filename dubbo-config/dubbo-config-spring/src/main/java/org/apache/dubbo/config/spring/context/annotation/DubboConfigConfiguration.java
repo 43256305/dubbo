@@ -56,6 +56,7 @@ public class DubboConfigConfiguration {
      * Single Dubbo {@link AbstractConfig Config} Bean Binding
      */
     @EnableConfigurationBeanBindings({
+            // xjh-@EnableConfigurationBeanBinding用于启用特定配置属性类的绑定。它的作用主要是将外部配置（如 application.properties 或 application.yml 中的配置项）绑定到 Spring Bean 上，从而简化配置管理和使用。
             @EnableConfigurationBeanBinding(prefix = "dubbo.application", type = ApplicationConfig.class),
             @EnableConfigurationBeanBinding(prefix = "dubbo.module", type = ModuleConfig.class),
             @EnableConfigurationBeanBinding(prefix = "dubbo.registry", type = RegistryConfig.class),

@@ -77,8 +77,10 @@ public abstract class AnnotatedInterfaceConfigBeanBuilder<C extends AbstractInte
 
         checkDependencies();
 
+        // xjh-new一个ReferenceBean
         C configBean = doBuild();
 
+        // xjh-配置ReferenceBean
         configureBean(configBean);
 
         if (logger.isInfoEnabled()) {

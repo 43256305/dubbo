@@ -64,6 +64,7 @@ public abstract class DubboBeanUtils {
      */
     public static void registerCommonBeans(BeanDefinitionRegistry registry) {
 
+        // xjh-注入处理@DubboReference注解的类
         // Since 2.5.7 Register @Reference Annotation Bean Processor as an infrastructure Bean
         registerInfrastructureBean(registry, ReferenceAnnotationBeanPostProcessor.BEAN_NAME,
                 ReferenceAnnotationBeanPostProcessor.class);
