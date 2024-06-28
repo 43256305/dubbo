@@ -33,6 +33,8 @@ import static org.apache.dubbo.common.constants.CommonConstants.TIME_COUNTDOWN_K
 
 /**
  * Log any invocation timeout, but don't stop server from running
+ *
+ * xjh-provider端超时过滤器
  */
 @Activate(group = CommonConstants.PROVIDER)
 public class TimeoutFilter implements Filter, Filter.Listener {
@@ -48,6 +50,7 @@ public class TimeoutFilter implements Filter, Filter.Listener {
     public void onResponse(Result appResponse, Invoker<?> invoker, Invocation invocation) {
         Object obj = RpcContext.getContext().get(TIME_COUNTDOWN_KEY);
         if (obj != null) {
+            // xjh-超时则抛出异常
             TimeoutCountDown countDown = (TimeoutCountDown) obj;
             if (countDown.isExpired()) {
                 ((AppResponse) appResponse).clear(); // clear response in case of timeout.

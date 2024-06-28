@@ -100,6 +100,7 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
             // xjh-isOneway用于判断是否需要关注返回值。
             // 不需要返回值的请求使用send，需要关注返回值的请求使用request
             boolean isOneway = RpcUtils.isOneway(getUrl(), invocation);
+            // xjh-将超时参数传递给provider
             int timeout = calculateTimeout(invocation, methodName);
             invocation.put(TIMEOUT_KEY, timeout);
             // xjh-isOneWay为true表示不需要关注返回值的请求
@@ -197,8 +198,10 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
         Object countdown = RpcContext.getContext().get(TIME_COUNTDOWN_KEY);
         int timeout = DEFAULT_TIMEOUT;
         if (countdown == null) {
+            // xjh-获取超时事件，默认1s
             timeout = (int) RpcUtils.getTimeout(getUrl(), methodName, RpcContext.getContext(), DEFAULT_TIMEOUT);
             if (getUrl().getParameter(ENABLE_TIMEOUT_COUNTDOWN_KEY, false)) {
+                // xjh-将超时时间放入attachment中，传递给provider
                 invocation.setObjectAttachment(TIMEOUT_ATTACHMENT_KEY, timeout); // pass timeout to remote server
             }
         } else {

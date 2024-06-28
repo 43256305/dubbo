@@ -31,6 +31,8 @@ import org.springframework.core.Ordered;
  * The {@link ApplicationListener} for {@link DubboBootstrap}'s lifecycle when the {@link ContextRefreshedEvent}
  * and {@link ContextClosedEvent} raised
  *
+ * xjh-通过接受上下文刷新事件来与Spring结合，启动DubboBootstrap。单例模式。
+ *
  * @since 2.7.5
  */
 public class DubboBootstrapApplicationListener extends OnceApplicationContextEventListener implements Ordered {
@@ -60,6 +62,7 @@ public class DubboBootstrapApplicationListener extends OnceApplicationContextEve
             DubboBootstrapStartStopListenerSpringAdapter.applicationContext = event.getApplicationContext();
         }
         if (event instanceof ContextRefreshedEvent) {
+            // xjh-上下文刷新事件
             onContextRefreshedEvent((ContextRefreshedEvent) event);
         } else if (event instanceof ContextClosedEvent) {
             onContextClosedEvent((ContextClosedEvent) event);
@@ -67,6 +70,7 @@ public class DubboBootstrapApplicationListener extends OnceApplicationContextEve
     }
 
     private void onContextRefreshedEvent(ContextRefreshedEvent event) {
+        // xjh-启动dubboBootstrap
         dubboBootstrap.start();
     }
 

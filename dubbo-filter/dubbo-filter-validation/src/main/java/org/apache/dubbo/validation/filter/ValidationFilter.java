@@ -37,6 +37,10 @@ import static org.apache.dubbo.common.constants.FilterConstants.VALIDATION_KEY;
  * ValidationFilter invoke the validation by finding the right {@link Validator} instance based on the
  * configured <b>validation</b> attribute value of invoker url before the actual method invocation.
  *
+ * xjh-ValidationFilter将会基于url的validation参数找到适合的Validator实例，来进行参数校验
+ * 它的主要作用是通过结合JSR 303 Bean Validation规范（如Hibernate Validator）对服务方法的输入参数进行验证，从而确保参数的合法性和数据的完整性。
+ * 如@NotNull, @Size, @Min, @Max等
+ *
  * <pre>
  *     e.g. &lt;dubbo:method name="save" validation="jvalidation" /&gt;
  *     In the above configuration a validation has been configured of type jvalidation. On invocation of method <b>save</b>
@@ -55,6 +59,9 @@ import static org.apache.dubbo.common.constants.FilterConstants.VALIDATION_KEY;
  * 2)Implement a SpecialValidator.java class (package name xxx.yyy.zzz) <br/>
  * 3)Add an entry <b>special</b>=<b>xxx.yyy.zzz.SpecialValidation</b> under <b>META-INF folders org.apache.dubbo.validation.Validation file</b>.
  *
+ * xjh-自定义校验（参考默认实现JValidation）：1.新建一个类SpecialValidation实现Validation或者继承AbstractValidation 2.与SpecialValidation同一个目录新建一个类SpecialValidator实现Validator接口
+ * 3.在META-INF文件夹下面的org.apache.dubbo.validation.Validation文件中写入我们的SpecialValidation
+ *
  * @see Validation
  * @see Validator
  * @see Filter
@@ -70,6 +77,7 @@ public class ValidationFilter implements Filter {
      * @param validation Validation instance injected by dubbo framework based on "validation" attribute value.
      */
     public void setValidation(Validation validation) {
+        // xjh-设置校验实例
         this.validation = validation;
     }
 
@@ -85,6 +93,7 @@ public class ValidationFilter implements Filter {
         if (validation != null && !invocation.getMethodName().startsWith("$")
                 && ConfigUtils.isNotEmpty(invoker.getUrl().getMethodParameter(invocation.getMethodName(), VALIDATION_KEY))) {
             try {
+                // xjh-获取validator并校验
                 Validator validator = validation.getValidator(invoker.getUrl());
                 if (validator != null) {
                     validator.validate(invocation.getMethodName(), invocation.getParameterTypes(), invocation.getArguments());

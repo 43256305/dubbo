@@ -26,17 +26,22 @@ import org.apache.dubbo.rpc.RpcException;
 
 /**
  * Set the current execution thread class loader to service interface's class loader.
+ *
+ * xjh-用于provider端切换类加载器
  */
 @Activate(group = CommonConstants.PROVIDER, order = -30000)
 public class ClassLoaderFilter implements Filter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        // xjh-获取当前线程的classLoader
         ClassLoader ocl = Thread.currentThread().getContextClassLoader();
+        // xjh-设置当前线程的classLoader为服务接口的classLoader
         Thread.currentThread().setContextClassLoader(invoker.getInterface().getClassLoader());
         try {
             return invoker.invoke(invocation);
         } finally {
+            // 重新设置回原来的classLoader
             Thread.currentThread().setContextClassLoader(ocl);
         }
     }

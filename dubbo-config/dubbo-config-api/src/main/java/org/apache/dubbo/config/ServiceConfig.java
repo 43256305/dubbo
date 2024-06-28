@@ -117,6 +117,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
     private String serviceName;
 
+    // xjh-加载默认的Protocol
     private static final Protocol PROTOCOL = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
 
     /**

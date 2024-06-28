@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentMap;
 public class LoggerFactory {
 
     private static final ConcurrentMap<String, FailsafeLogger> LOGGERS = new ConcurrentHashMap<>();
+    // xjh-日志适配器，适配了log4j/slf4j等日志系统
     private static volatile LoggerAdapter LOGGER_ADAPTER;
 
     // search common-used logging frameworks

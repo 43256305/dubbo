@@ -30,6 +30,8 @@ import static org.apache.dubbo.rpc.Constants.DEFAULT_TPS_LIMIT_INTERVAL;
  * DefaultTPSLimiter is a default implementation for tps filter. It is an in memory based implementation for storing
  * tps information. It internally use
  *
+ * xjh-provider端tps限流实现
+ *
  * @see org.apache.dubbo.rpc.filter.TpsLimitFilter
  */
 public class DefaultTPSLimiter implements TPSLimiter {
@@ -41,7 +43,7 @@ public class DefaultTPSLimiter implements TPSLimiter {
         int rate = url.getParameter(TPS_LIMIT_RATE_KEY, -1);
         long interval = url.getParameter(TPS_LIMIT_INTERVAL_KEY, DEFAULT_TPS_LIMIT_INTERVAL);
         String serviceKey = url.getServiceKey();
-        if (rate > 0) {
+        if (rate > 0) { // xjh-需要限流
             StatItem statItem = stats.get(serviceKey);
             if (statItem == null) {
                 stats.putIfAbsent(serviceKey, new StatItem(serviceKey, rate, interval));
@@ -54,7 +56,7 @@ public class DefaultTPSLimiter implements TPSLimiter {
                 }
             }
             return statItem.isAllowable();
-        } else {
+        } else { // xjh-不需要限流
             StatItem statItem = stats.get(serviceKey);
             if (statItem != null) {
                 stats.remove(serviceKey);

@@ -35,7 +35,9 @@ import static org.apache.dubbo.common.constants.CommonConstants.SERVICE_FILTER_K
 
 /**
  * ListenerProtocol
- * xjh-为invoker与exporter构造filter链
+ * xjh-为invoker与exporter构造filter链。
+ * 通过spi加载wrapper机制，dubbo会默认创建DubboProtocol这个类，然后会创建ProtocolListenerWrapper，并将DubboProtocol注入其中，然后创建ProtocolFilterWrapper，并将ProtocolListenerWrapper注入其中。
+ * 所以export与refer方法之前默认会构造filter链
  */
 @Activate(order = 100)
 public class ProtocolFilterWrapper implements Protocol {

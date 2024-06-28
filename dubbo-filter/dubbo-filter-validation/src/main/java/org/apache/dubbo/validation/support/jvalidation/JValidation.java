@@ -34,6 +34,7 @@ public class JValidation extends AbstractValidation {
      */
     @Override
     protected Validator createValidator(URL url) {
+        // xjh-返回的为同一个目录下的JValidator实例
         return new JValidator(url);
     }
 

@@ -80,6 +80,7 @@ public class JValidator implements Validator {
 
     private final Map<String, Class> methodClassMap;
 
+    // xjh-java提供的校验接口，真正执行校验的类，配合Hibernate Validator一起使用
     private final javax.validation.Validator validator;
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -277,6 +278,7 @@ public class JValidator implements Validator {
 
         Object parameterBean = getMethodParameterBean(clazz, method, arguments);
         if (parameterBean != null) {
+            // xjh-调用validator.validate实现参数校验
             violations.addAll(validator.validate(parameterBean, classgroups ));
         }
 

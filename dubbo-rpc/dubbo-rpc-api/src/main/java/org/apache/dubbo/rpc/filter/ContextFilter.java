@@ -52,6 +52,7 @@ import static org.apache.dubbo.rpc.Constants.TOKEN_KEY;
 /**
  * ContextFilter set the provider RpcContext with invoker, invocation, local port it is using and host for
  * current execution thread.
+ * xjh-用于provider端初始化并设置RpcContext
  *
  * @see RpcContext
  */
@@ -81,6 +82,7 @@ public class ContextFilter implements Filter, Filter.Listener {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        // xjh-获取consumer端传递过来的attachments
         Map<String, Object> attachments = invocation.getObjectAttachments();
         if (attachments != null) {
             Map<String, Object> newAttach = new HashMap<>(attachments.size());
@@ -93,7 +95,9 @@ public class ContextFilter implements Filter, Filter.Listener {
             attachments = newAttach;
         }
 
+        // xjh-获取RpcContext
         RpcContext context = RpcContext.getContext();
+        // 为RpcContext设置信息
         context.setInvoker(invoker)
                 .setInvocation(invocation)
 //                .setAttachments(attachments)  // merged from dubbox
@@ -125,11 +129,13 @@ public class ContextFilter implements Filter, Filter.Listener {
         }
 
         try {
+            // 在整个调用过程中，需要保持当前RpcContext不被删除，这里会将remove开关关掉，这样，removeContext()方法不会删除LOCAL RpcContext了
             context.clearAfterEachInvoke(false);
             return invoker.invoke(invocation);
         } finally {
             context.clearAfterEachInvoke(true);
             // IMPORTANT! For async scenario, we must remove context from current thread, so we always create a new RpcContext for the next invoke for the same thread.
+            // 理RpcContext，当前线程处理下一个调用的时候，会创建新的RpcContext
             RpcContext.removeContext(true);
             RpcContext.removeServerContext();
         }
@@ -138,6 +144,7 @@ public class ContextFilter implements Filter, Filter.Listener {
     @Override
     public void onResponse(Result appResponse, Invoker<?> invoker, Invocation invocation) {
         // pass attachments to result
+        // xjh-将attachments放到response中，传递给consumer
         appResponse.addObjectAttachments(RpcContext.getServerContext().getObjectAttachments());
     }
 

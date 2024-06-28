@@ -35,6 +35,7 @@ import static org.apache.dubbo.rpc.Constants.DEPRECATED_KEY;
  * DeprecatedFilter logs error message if a invoked method has been marked as deprecated. To check whether a method
  * is deprecated or not it looks for <b>deprecated</b> attribute value and consider it is deprecated it value is <b>true</b>
  *
+ * xjh-consumer端deprecated拦截器，如果调用deprecated方法会打印日志
  * @see Filter
  */
 @Activate(group = CommonConstants.CONSUMER, value = DEPRECATED_KEY)

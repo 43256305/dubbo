@@ -58,6 +58,8 @@ import static org.apache.dubbo.rpc.Constants.ACCESS_LOG_KEY;
  *    &lt;appender-ref ref="foo" /&gt;
  * &lt;/logger&gt;
  * </pre></code>
+ *
+ * xjh-用于provider端记录日志
  */
 @Activate(group = PROVIDER, value = ACCESS_LOG_KEY)
 public class AccessLogFilter implements Filter {
@@ -86,6 +88,7 @@ public class AccessLogFilter implements Filter {
      * defined in url <b>accesslog</b>
      */
     public AccessLogFilter() {
+        // xjh-启动定时任务日志刷盘调度
         LOG_SCHEDULED.scheduleWithFixedDelay(this::writeLogToFile, LOG_OUTPUT_INTERVAL, LOG_OUTPUT_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
@@ -102,8 +105,10 @@ public class AccessLogFilter implements Filter {
         try {
             String accessLogKey = invoker.getUrl().getParameter(ACCESS_LOG_KEY);
             if (ConfigUtils.isNotEmpty(accessLogKey)) {
-                AccessLogData logData = AccessLogData.newLogData(); 
+                AccessLogData logData = AccessLogData.newLogData();
+                // xjh-构造AccessLogData对象，其中记录了日志信息，例如，调用的服务名称、方法名称、version等
                 logData.buildAccessLogData(invoker, inv);
+                // 记录日志
                 log(accessLogKey, logData);
             }
         } catch (Throwable t) {
@@ -115,9 +120,10 @@ public class AccessLogFilter implements Filter {
     private void log(String accessLog, AccessLogData accessLogData) {
         Queue<AccessLogData> logQueue = LOG_ENTRIES.computeIfAbsent(accessLog, k -> new ConcurrentLinkedQueue<>());
 
+        // xjh-小雨5000条直接写入内存
         if (logQueue.size() < LOG_MAX_BUFFER) {
             logQueue.add(accessLogData);
-        } else {
+        } else { // 大于5000条则刷如磁盘
             logger.warn("AccessLog buffer is full. Do a force writing to file to clear buffer.");
             //just write current logQueue to file.
             writeLogQueueToFile(accessLog, logQueue);
@@ -129,6 +135,7 @@ public class AccessLogFilter implements Filter {
     private void writeLogQueueToFile(String accessLog, Queue<AccessLogData> logQueue) {
         try {
             if (ConfigUtils.isDefault(accessLog)) {
+                // xjh-通过日志系统写入
                 processWithServiceLogger(logQueue);
             } else {
                 File file = new File(accessLog);
@@ -137,6 +144,7 @@ public class AccessLogFilter implements Filter {
                     logger.debug("Append log to " + accessLog);
                 }
                 renameFile(file);
+                // 直接写入文件
                 processWithAccessKeyLogger(logQueue, file);
             }
         } catch (Exception e) {
@@ -155,6 +163,7 @@ public class AccessLogFilter implements Filter {
     }
 
     private void processWithAccessKeyLogger(Queue<AccessLogData> logQueue, File file) throws IOException {
+        // xjh-直接写入文件
         FileWriter writer = new FileWriter(file, true);
         try  {
             while (!logQueue.isEmpty()) {
@@ -170,6 +179,7 @@ public class AccessLogFilter implements Filter {
     private void processWithServiceLogger(Queue<AccessLogData> logQueue) {
         while (!logQueue.isEmpty()) {
             AccessLogData logData = logQueue.poll();
+            // xjh-使用LoggerFactory写入日志
             LoggerFactory.getLogger(LOG_KEY + "." + logData.getServiceName()).info(logData.getLogMessage());
         }
     }

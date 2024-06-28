@@ -31,6 +31,8 @@ import java.lang.annotation.Target;
  * </pre>
  * It means both Save group and Update group are needed to check when method relatedQuery is invoked.
  * </p>
+ *
+ * xjh-分组校验注解，如@MethodValidated({Save.class, Update.class})意味着当Save group and Update group时将会被校验
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)

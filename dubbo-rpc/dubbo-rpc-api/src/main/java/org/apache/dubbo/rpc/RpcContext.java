@@ -147,6 +147,7 @@ public class RpcContext {
      * @return context
      */
     public static RpcContext getContext() {
+        // xjh-获取当前线程绑定的RpcContext
         return LOCAL.get();
     }
 

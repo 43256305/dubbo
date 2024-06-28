@@ -42,6 +42,9 @@ import static org.apache.dubbo.common.constants.FilterConstants.CACHE_KEY;
  * <li>jcache</li>
  * <li>expiring</li>
  *
+ * xjh-dubbo提供的缓存拦截器。它的主要作用是通过在消费者（Consumer）端对服务调用结果进行缓存，减少对服务提供者（Provider）的频繁调用，从而提升系统性能，减轻后端负载。
+ * 实现有：lru/threadlocal/jcache/expiring，默认为lru
+ *
  * <pre>
  *   e.g. 1)&lt;dubbo:service cache="lru" /&gt;
  *        2)&lt;dubbo:service /&gt; &lt;dubbo:method name="method2" cache="threadlocal" /&gt; &lt;dubbo:service/&gt;
@@ -94,8 +97,11 @@ public class CacheFilter implements Filter {
         if (cacheFactory != null && ConfigUtils.isNotEmpty(invoker.getUrl().getMethodParameter(invocation.getMethodName(), CACHE_KEY))) {
             Cache cache = cacheFactory.getCache(invoker.getUrl(), invocation);
             if (cache != null) {
+                // 使用参数拼接成key
                 String key = StringUtils.toArgumentString(invocation.getArguments());
+                // xjh-从缓存中获取
                 Object value = cache.get(key);
+                // xjh-如果值不为空，则直接返回
                 if (value != null) {
                     if (value instanceof ValueWrapper) {
                         return AsyncRpcResult.newDefaultAsyncResult(((ValueWrapper) value).get(), invocation);

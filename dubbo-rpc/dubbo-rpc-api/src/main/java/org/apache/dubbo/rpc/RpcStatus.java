@@ -32,16 +32,21 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class RpcStatus {
 
+    // xjh-记录每个consumer调用每个服务的统计信息
     private static final ConcurrentMap<String, RpcStatus> SERVICE_STATISTICS = new ConcurrentHashMap<String,
             RpcStatus>();
 
+    // xjh-记录每个consumer调用每个服务的每个方法的统计信息
     private static final ConcurrentMap<String, ConcurrentMap<String, RpcStatus>> METHOD_STATISTICS =
             new ConcurrentHashMap<String, ConcurrentMap<String, RpcStatus>>();
 
     private final ConcurrentMap<String, Object> values = new ConcurrentHashMap<String, Object>();
 
+    // xjh-当前并发度
     private final AtomicInteger active = new AtomicInteger();
+    // xjh-调用总数
     private final AtomicLong total = new AtomicLong();
+    // xjh-失败的调用次数
     private final AtomicInteger failed = new AtomicInteger();
     private final AtomicLong totalElapsed = new AtomicLong();
     private final AtomicLong failedElapsed = new AtomicLong();
@@ -100,8 +105,11 @@ public class RpcStatus {
      */
     public static boolean beginCount(URL url, String methodName, int max) {
         max = (max <= 0) ? Integer.MAX_VALUE : max;
+        // xjh-获取每个服务的统计状态
         RpcStatus appStatus = getStatus(url);
+        // xjh-获取每个服务的每个方法的统计状态
         RpcStatus methodStatus = getStatus(url, methodName);
+        // 如果方法的调用次数已经达到最大值，则返回false
         if (methodStatus.active.get() == Integer.MAX_VALUE) {
             return false;
         }
@@ -112,11 +120,12 @@ public class RpcStatus {
                 return false;
             }
 
-            if (methodStatus.active.compareAndSet(i, i + 1)) {
+            if (methodStatus.active.compareAndSet(i, i + 1)) { // xjh-cas操作方法调用次数加一
                 break;
             }
         }
 
+        // 服务的调用次数加一
         appStatus.active.incrementAndGet();
 
         return true;
@@ -133,6 +142,7 @@ public class RpcStatus {
     }
 
     private static void endCount(RpcStatus status, long elapsed, boolean succeeded) {
+        // xjh-当前并发数减一
         status.active.decrementAndGet();
         status.total.incrementAndGet();
         status.totalElapsed.addAndGet(elapsed);

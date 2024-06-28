@@ -38,6 +38,7 @@ import static org.apache.dubbo.rpc.Constants.ACTIVES_KEY;
  *      If there are more than configured (in this example 2) is trying to invoke remote method, then rest of invocation
  *      will wait for configured timeout(default is 0 second) before invocation gets kill by dubbo.
  * </pre>
+ * xjh-用于控制并发，客户端限流
  *
  * @see Filter
  */
@@ -50,19 +51,22 @@ public class ActiveLimitFilter implements Filter, Filter.Listener {
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
         URL url = invoker.getUrl();
         String methodName = invocation.getMethodName();
+        // xjh-获取最大并发数
         int max = invoker.getUrl().getMethodParameter(methodName, ACTIVES_KEY, 0);
+        // 获取该方法的状态信息
         final RpcStatus rpcStatus = RpcStatus.getStatus(invoker.getUrl(), invocation.getMethodName());
-        if (!RpcStatus.beginCount(url, methodName, max)) {
+        if (!RpcStatus.beginCount(url, methodName, max)) { // 尝试并发数加一，如果到达最大数量则进入if流程
             long timeout = invoker.getUrl().getMethodParameter(invocation.getMethodName(), TIMEOUT_KEY, 0);
             long start = System.currentTimeMillis();
             long remain = timeout;
             synchronized (rpcStatus) {
-                while (!RpcStatus.beginCount(url, methodName, max)) {
+                while (!RpcStatus.beginCount(url, methodName, max)) {  // 再次尝试并发度加一，如果失败则阻塞，直到并发度增加成功
                     try {
-                        rpcStatus.wait(remain);
+                        rpcStatus.wait(remain); // 当前线程阻塞，等待并发度降低
                     } catch (InterruptedException e) {
                         // ignore
                     }
+                    // xjh-检查是否超时
                     long elapsed = System.currentTimeMillis() - start;
                     remain = timeout - elapsed;
                     if (remain <= 0) {
@@ -87,7 +91,9 @@ public class ActiveLimitFilter implements Filter, Filter.Listener {
         URL url = invoker.getUrl();
         int max = invoker.getUrl().getMethodParameter(methodName, ACTIVES_KEY, 0);
 
+        // xjh-调用完成则并发度减一
         RpcStatus.endCount(url, methodName, getElapsed(invocation), true);
+        // 唤起因为并发度不足而阻塞的consumer
         notifyFinish(RpcStatus.getStatus(url, methodName), max);
     }
 
@@ -115,6 +121,7 @@ public class ActiveLimitFilter implements Filter, Filter.Listener {
     private void notifyFinish(final RpcStatus rpcStatus, int max) {
         if (max > 0) {
             synchronized (rpcStatus) {
+                // xjh-通知阻塞consumer
                 rpcStatus.notifyAll();
             }
         }
