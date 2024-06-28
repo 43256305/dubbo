@@ -59,6 +59,7 @@ public interface Router extends Comparable<Router> {
      * Notify the router the invoker list. Invoker list may change from time to time. This method gives the router a
      * chance to prepare before {@link Router#route(List, URL, Invocation)} gets called.
      *
+     * xjh-provider url刷新时将会调用每个router的notify方法
      * @param invokers invoker list
      * @param <T>      invoker's type
      */

@@ -55,6 +55,8 @@ import static org.apache.dubbo.rpc.cluster.Constants.TYPE_KEY;
 
 /**
  * ScriptRouter
+ *
+ * xjh-通过脚本进行路由
  */
 public class ScriptRouter extends AbstractRouter {
 
@@ -64,10 +66,12 @@ public class ScriptRouter extends AbstractRouter {
 
     private static final Map<String, ScriptEngine> ENGINES = new ConcurrentHashMap<>();
 
+    // xjh-脚本引擎
     private final ScriptEngine engine;
 
     private final String rule;
 
+    // xjh-编译的脚本
     private CompiledScript function;
 
     private AccessControlContext accessControlContext;
@@ -134,6 +138,7 @@ public class ScriptRouter extends AbstractRouter {
             @Override
             public Object run() {
                 try {
+                    // xjh-执行脚本
                     return function.eval(bindings);
                 } catch (ScriptException e) {
                     logger.error("route error, rule has been ignored. rule: " + rule + ", method:" +

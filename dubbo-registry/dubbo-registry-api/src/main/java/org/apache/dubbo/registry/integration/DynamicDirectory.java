@@ -170,6 +170,7 @@ public abstract class DynamicDirectory<T> extends AbstractDirectory<T> implement
 
     @Override
     public List<Invoker<T>> doList(Invocation invocation) {
+        // xjh-检测refreshInvoker中设置的forbidden字段，如果为true则直接抛出异常
         if (forbidden && shouldFailFast) {
             // 1. No service provider 2. Service providers are disabled
             throw new RpcException(RpcException.FORBIDDEN_EXCEPTION, "No provider available from registry " +

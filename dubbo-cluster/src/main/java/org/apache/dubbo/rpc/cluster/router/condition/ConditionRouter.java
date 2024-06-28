@@ -56,14 +56,22 @@ import static org.apache.dubbo.rpc.cluster.Constants.RUNTIME_KEY;
  * For 2.7.x and later, please refer to {@link org.apache.dubbo.rpc.cluster.router.condition.config.ServiceRouter}
  * and {@link org.apache.dubbo.rpc.cluster.router.condition.config.AppRouter}
  * refer to https://dubbo.apache.org/zh/docs/v2.7/user/examples/routing-rule/ .
+ *
+ * xjh-条件路由
+ * 如：host = 192.168.0.100 => host = 192.168.0.150
+ * 上面例子中，=>之前的为consumer的匹配条件，该条件中的所有参数会与consumer的url进行对比，=>之后的为provider的匹配条件，当=>前面的表达式与consumer匹配，则可以获取与=>后面匹配的provider的invoker
+ * =>前面的为空，则表示表示匹配所有consumer，当=>后面的为空，则表示禁止访问任何provider
  */
 public class ConditionRouter extends AbstractRouter {
     public static final String NAME = "condition";
 
     private static final Logger logger = LoggerFactory.getLogger(ConditionRouter.class);
+    // xjh-用于切分路由规则的正则表达式
     protected static final Pattern ROUTE_PATTERN = Pattern.compile("([&!=,]*)\\s*([^&!=,\\s]+)");
     protected static Pattern ARGUMENTS_PATTERN = Pattern.compile("arguments\\[([0-9]+)\\]");
+    // xjh-consumer匹配的条件集合，即=>之前的部分，key为参数名称，参数包括：method、argument、protocol、host、port等等
     protected Map<String, MatchPair> whenCondition;
+    // xjh-provider匹配的条件集合，即=>之后的部分
     protected Map<String, MatchPair> thenCondition;
 
     private boolean enabled;
@@ -94,6 +102,7 @@ public class ConditionRouter extends AbstractRouter {
                 throw new IllegalArgumentException("Illegal route rule!");
             }
             rule = rule.replace("consumer.", "").replace("provider.", "");
+            // xjh-匹配=>符号
             int i = rule.indexOf("=>");
             // xjh-分别获取服务消费者和提供者匹配规则
             String whenRule = i < 0 ? null : rule.substring(0, i).trim();

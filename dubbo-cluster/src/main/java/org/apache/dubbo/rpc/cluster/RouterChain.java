@@ -35,16 +35,20 @@ import static org.apache.dubbo.rpc.cluster.Constants.ROUTER_KEY;
 public class RouterChain<T> {
 
     // full list of addresses from registry, classified by method name.
+    // xjh-在RegistryDirectory刷新refreshInvoker时会将最新的invoker设置到这里
     private List<Invoker<T>> invokers = Collections.emptyList();
 
     // containing all routers, reconstruct every time 'route://' urls change.
+    // xjh-当前 RouterChain 中真正要使用的 Router 集合，其中不仅包括了builtinRouters 集合中全部的 Router 对象，还包括通过 addRouters() 方法添加的 Router 对象
     private volatile List<Router> routers = Collections.emptyList();
 
     // Fixed router instances: ConfigConditionRouter, TagRouter, e.g., the rule for each instance may change but the
     // instance will never delete or recreate.
+    // xjh-固定的routers实例，当前 RouterChain 激活的内置 Router 集合，永远不会被删除或者重新创建
     private List<Router> builtinRouters = Collections.emptyList();
 
     public static <T> RouterChain<T> buildChain(URL url) {
+        // xjh-静态方法创建RouteChain
         return new RouterChain<>(url);
     }
 
@@ -52,10 +56,12 @@ public class RouterChain<T> {
         List<RouterFactory> extensionFactories = ExtensionLoader.getExtensionLoader(RouterFactory.class)
                 .getActivateExtension(url, ROUTER_KEY);
 
+        // xjh-根据所有激活的RouterFactory生成相应的Router
         List<Router> routers = extensionFactories.stream()
                 .map(factory -> factory.getRouter(url))
                 .collect(Collectors.toList());
 
+        // xjh-初始化builtinRouters字段以及routers字段
         initWithRouters(routers);
     }
 
@@ -64,6 +70,7 @@ public class RouterChain<T> {
      * FIXME: this method should not be public
      */
     public void initWithRouters(List<Router> builtinRouters) {
+        // xjh-将初始加载的routers赋值给这两个字段并排序
         this.builtinRouters = builtinRouters;
         this.routers = new ArrayList<>(builtinRouters);
         this.sort();
@@ -75,10 +82,13 @@ public class RouterChain<T> {
      * keep the builtinRouters which are available all the time and the latest notified routers which are generated
      * from URLs.
      *
+     * xjh-添加新的routers，新的route协议的url将会创建新的router实例。
+     *
      * @param routers routers from 'router://' rules in 2.6.x or before.
      */
     public void addRouters(List<Router> routers) {
         List<Router> newRouters = new ArrayList<>();
+        // xjh-将第一次加载的内置routers与新来的routers放入到routers中并排序
         newRouters.addAll(builtinRouters);
         newRouters.addAll(routers);
         CollectionUtils.sort(newRouters);
@@ -98,6 +108,7 @@ public class RouterChain<T> {
     public List<Invoker<T>> route(URL url, Invocation invocation) {
         List<Invoker<T>> finalInvokers = invokers;
         for (Router router : routers) {
+            // xjh-遍历所有routers的route方法
             finalInvokers = router.route(finalInvokers, url, invocation);
         }
         return finalInvokers;
@@ -109,6 +120,7 @@ public class RouterChain<T> {
      */
     public void setInvokers(List<Invoker<T>> invokers) {
         this.invokers = (invokers == null ? Collections.emptyList() : invokers);
+        // xjh-调用每个router的notify方法
         routers.forEach(router -> router.notify(this.invokers));
     }
 }

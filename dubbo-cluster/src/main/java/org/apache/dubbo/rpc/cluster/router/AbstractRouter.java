@@ -24,6 +24,7 @@ import org.apache.dubbo.rpc.cluster.governance.GovernanceRuleRepository;
 public abstract class AbstractRouter implements Router {
     protected int priority = DEFAULT_PRIORITY;
     protected boolean force = false;
+    // xjh-路由规则的 URL，可以从 rule 参数中获取具体的路由规则
     protected URL url;
 
     protected GovernanceRuleRepository ruleRepository;

@@ -44,6 +44,7 @@ import static org.apache.dubbo.rpc.Constants.FORCE_USE_TAG;
 
 /**
  * TagRouter, "application.tag-router"
+ * xjh-通过 TagRouter，我们可以将某一个或多个 Provider 划分到同一分组，约束流量只在指定分组中流转，这样就可以轻松达到流量隔离的目的，从而支持灰度发布等场景。
  */
 public class TagRouter extends AbstractRouter implements ConfigurationListener {
     public static final String NAME = "TAG_ROUTER";

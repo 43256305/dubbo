@@ -222,7 +222,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
             // xjh-注意下面的三个缓存。doList中要用到。
             // xjh-将新建的invoker加入routeChina
             routerChain.setInvokers(newInvokers);
-            // xjh-将新建的invoker merge后放入缓存
+            // xjh-将新建的invoker merge后放入缓存。根据是否multiGroup决定是否调用toMergeInvokerList，将每个group中的invoker合并成一个invoker
             this.invokers = multiGroup ? toMergeInvokerList(newInvokers) : newInvokers;
             this.urlInvokerMap = newUrlInvokerMap;
 
@@ -240,13 +240,16 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
     private List<Invoker<T>> toMergeInvokerList(List<Invoker<T>> invokers) {
         List<Invoker<T>> mergedInvokers = new ArrayList<>();
         // group by invoker#url#group
+        // xjh-根据url的group参数分组
         Map<String, List<Invoker<T>>> groupMap =
                 invokers.stream().collect(Collectors.groupingBy(x -> x.getUrl().getParameter(GROUP_KEY, "")));
 
         if (groupMap.size() > 1) {
             for (List<Invoker<T>> groupList : groupMap.values()) {
+                // xjh-将同一个组的group合并成一个StaticDirectory
                 StaticDirectory<T> staticDirectory = new StaticDirectory<>(groupList);
                 staticDirectory.buildRouterChain();
+                // 调用Cluster的join方法，将多个invoker转换为一个invoker
                 mergedInvokers.add(CLUSTER.join(staticDirectory));
             }
         } else {
@@ -369,14 +372,25 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
     /**
      * Merge url parameters. the order is: override > -D >Consumer > Provider
      *
+     * xjh-合并provider url参数
      * @param providerUrl
      * @return
      */
     private URL mergeUrl(URL providerUrl) {
+        // xjh-首先，移除Provider URL中只在Provider端生效的属性，例如，threadname、threadpool、corethreads、threads、queues等参数。
+        // 然后，用Consumer端的配置覆盖Provider URL的相应配置，其中，version、group、methods、timestamp等参数以Provider端的配置优先
+        // 最后，合并Provider端和Consumer端配置的Filter以及Listener
         providerUrl = ClusterUtils.mergeUrl(providerUrl, queryMap); // Merge the consumer side parameters
 
+        // xjh-合并configurators类型的URL，configurators类型的URL又分为三类：
+        // 第一类是注册中心Configurators目录下新增的URL(override协议)
+        // 第二类是通过ConsumerConfigurationListener监听器(监听应用级别的配置)得到的动态配置
+        // 第三类是通过ReferenceConfigurationListener监听器(监听服务级别的配置)得到的动态配置
+        // 这里只需要先了解：除了注册中心的configurators目录下有配置信息之外，还有可以在服务治理控制台动态添加配置，
+        // ConsumerConfigurationListener、ReferenceConfigurationListener监听器就是用来监听服务治理控制台的动态配置的
         providerUrl = overrideWithConfigurator(providerUrl);
 
+        // 增加check=false，即只有在调用时，才检查Provider是否可用
         providerUrl = providerUrl.addParameter(Constants.CHECK_KEY, String.valueOf(false)); // Do not check whether the connection is successful or not, always create Invoker!
 
         // fix issue#9922
@@ -401,6 +415,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
                 providerUrl = providerUrl.setPath(path);
             }
         }
+        // xjh-返回合并的url
         return providerUrl;
     }
 

@@ -31,6 +31,8 @@ import org.apache.dubbo.common.extension.SPI;
  * Note Router has a different behaviour since 2.7.0, for each type of Router, there will only has one Router instance
  * for each service. See {@link CacheableRouterFactory} and {@link RouterChain} for how to extend a new Router or how
  * the Router instances are loaded.
+ *
+ * xjh-路由工厂接口，根据url的协议生成router
  */
 @SPI
 public interface RouterFactory {
