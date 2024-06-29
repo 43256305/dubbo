@@ -65,6 +65,10 @@ public interface Configurator extends Comparable<Configurator> {
      * <li>override:// rule is not supported... ,needs to be calculated by registry itself</li>
      * <li>override://0.0.0.0/ without parameters means clearing the override</li>
      * </ol>
+     * xjh-将多个配置URL对象解析成相应的Configurator对象
+     * 写入注册中心 configurators 中的动态配置有 override 和 absent 两种协议。override，表示采用覆盖方式。
+     * 例：override://0.0.0.0/org.apache.dubbo.demo.DemoService?category=configurators&dynamic=false&enabled=true&application=dubbo-demo-api-consumer&timeout=1000
+     * 0.0.0.0，表示对所有 IP 生效。org.apache.dubbo.demo.DemoService，表示只对指定服务生效。
      *
      * @param urls URL list to convert
      * @return converted configurator list
@@ -89,8 +93,10 @@ public interface Configurator extends Comparable<Configurator> {
             if (CollectionUtils.isEmptyMap(override)) {
                 continue;
             }
+            // xjh-创建Configurator对象
             configurators.add(configuratorFactory.getConfigurator(url));
         }
+        // xjh-排序，序首先按照ip进行排序，所有ip的优先级都高于0.0.0.0，当ip相同时，会按照priority参数值进行排序
         Collections.sort(configurators);
         return Optional.of(configurators);
     }

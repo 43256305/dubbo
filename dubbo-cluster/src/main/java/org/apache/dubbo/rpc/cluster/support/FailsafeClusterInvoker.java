@@ -31,6 +31,7 @@ import java.util.List;
 /**
  * When invoke fails, log the error message and ignore this error by returning an empty Result.
  * Usually used to write audit logs and other operations
+ * // xjh-调用失败则直接记录报错信息，并且返回一个空结果。
  *
  * <a href="http://en.wikipedia.org/wiki/Fail-safe">Fail-safe</a>
  *

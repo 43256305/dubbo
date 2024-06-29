@@ -43,6 +43,7 @@ import static org.apache.dubbo.common.constants.CommonConstants.RETRIES_KEY;
  * <p>
  * <a href="http://en.wikipedia.org/wiki/Failover">Failover</a>
  *
+ * // xjh-当invoke失败，则记录失败信息，并且尝试其他invoker
  */
 public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
 
@@ -58,9 +59,11 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
         List<Invoker<T>> copyInvokers = invokers;
         checkInvokers(copyInvokers, invocation);
         String methodName = RpcUtils.getMethodName(invocation);
+        // xjh-计算重试次数
         int len = calculateInvokeTimes(methodName);
         // retry loop.
         RpcException le = null; // last exception.
+        // xjh-记录被调用过的invoker
         List<Invoker<T>> invoked = new ArrayList<Invoker<T>>(copyInvokers.size()); // invoked invokers.
         Set<String> providers = new HashSet<String>(len);
         for (int i = 0; i < len; i++) {
@@ -68,14 +71,18 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
             //NOTE: if `invokers` changed, then `invoked` also lose accuracy.
             if (i > 0) {
                 checkWhetherDestroyed();
+                // xjh-这里会重新调用directory的list方法，获取可用并匹配的invoker列表
                 copyInvokers = list(invocation);
                 // check again
                 checkInvokers(copyInvokers, invocation);
             }
+            // xjh-选出某个invoker
             Invoker<T> invoker = select(loadbalance, invocation, copyInvokers, invoked);
+            // xjh-将选出的invoker加入invoked列表中
             invoked.add(invoker);
             RpcContext.getContext().setInvokers((List) invoked);
             try {
+                // xjh-调用invoke方法
                 Result result = invoker.invoke(invocation);
                 if (le != null && logger.isWarnEnabled()) {
                     logger.warn("Although retry the method " + methodName
@@ -88,6 +95,7 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
                             + " using the dubbo version " + Version.getVersion() + ". Last error is: "
                             + le.getMessage(), le);
                 }
+                // xjh-没有报错直接返回，报错了则进入下一次重试（下一个循环），选出下一个invoker
                 return result;
             } catch (RpcException e) {
                 if (e.isBiz()) { // biz exception.

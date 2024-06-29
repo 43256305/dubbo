@@ -31,6 +31,7 @@ public class ConsumerContextClusterInterceptor implements ClusterInterceptor, Cl
     @Override
     public void before(AbstractClusterInvoker<?> invoker, Invocation invocation) {
         if (invocation instanceof RpcInvocation) {
+            // xjh-设置invoker
             ((RpcInvocation) invocation).setInvoker(invoker);
         }
         RpcContext.removeServerContext();
@@ -38,11 +39,13 @@ public class ConsumerContextClusterInterceptor implements ClusterInterceptor, Cl
 
     @Override
     public void after(AbstractClusterInvoker<?> clusterInvoker, Invocation invocation) {
+        // xjh-删除当前线程的上下文信息
         RpcContext.removeContext(true);
     }
 
     @Override
     public void onMessage(Result appResponse, AbstractClusterInvoker<?> invoker, Invocation invocation) {
+        // xjh-将响应的attachments放入到请求上下文中
         RpcContext.getServerContext().setObjectAttachments(appResponse.getObjectAttachments());
     }
 

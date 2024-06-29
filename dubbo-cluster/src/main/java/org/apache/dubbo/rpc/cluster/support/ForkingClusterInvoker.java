@@ -42,6 +42,8 @@ import static org.apache.dubbo.rpc.cluster.Constants.DEFAULT_FORKS;
  *
  * Invoke a specific number of invokers concurrently, usually used for demanding real-time operations, but need to waste more service resources.
  *
+ * // xjh-维护了一个线程池，并发调用多个provider，只要有一个provider成功返回，则调用结束。主要是适用于一些实时性较高的读取操作。
+ *
  * <a href="http://en.wikipedia.org/wiki/Fork_(topology)">Fork</a>
  */
 public class ForkingClusterInvoker<T> extends AbstractClusterInvoker<T> {

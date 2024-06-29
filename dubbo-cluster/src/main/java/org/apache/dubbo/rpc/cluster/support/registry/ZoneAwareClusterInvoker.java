@@ -53,6 +53,8 @@ import static org.apache.dubbo.config.RegistryConfig.PREFER_REGISTRY_KEY;
  * 2. check the zone the current request belongs, pick the registry that has the same zone first.
  * 3. Evenly balance traffic between all registries based on each registry's weight.
  * 4. Pick anyone that's available.
+ *
+ * // xjh-多注册中心时使用。
  */
 public class ZoneAwareClusterInvoker<T> extends AbstractClusterInvoker<T> {
 

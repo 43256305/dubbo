@@ -73,11 +73,13 @@ public abstract class AbstractConfigurator implements Configurator {
          * This if branch is created since 2.7.0.
          */
         String apiVersion = configuratorUrl.getParameter(CONFIG_VERSION_KEY);
-        if (StringUtils.isNotEmpty(apiVersion)) {
+        if (StringUtils.isNotEmpty(apiVersion)) { // 2.7.0之后版本的配置处理
             String currentSide = url.getParameter(SIDE_KEY);
             String configuratorSide = configuratorUrl.getParameter(SIDE_KEY);
+            // xjh-consumer端
             if (currentSide.equals(configuratorSide) && CONSUMER.equals(configuratorSide) && 0 == configuratorUrl.getPort()) {
                 url = configureIfMatch(NetUtils.getLocalHost(), url);
+                // xjh-provider端
             } else if (currentSide.equals(configuratorSide) && PROVIDER.equals(configuratorSide) &&
                     url.getPort() == configuratorUrl.getPort()) {
                 url = configureIfMatch(url.getHost(), url);
@@ -86,7 +88,7 @@ public abstract class AbstractConfigurator implements Configurator {
         /*
          * This else branch is deprecated and is left only to keep compatibility with versions before 2.7.0
          */
-        else {
+        else { // 2.7.0之前的配置处理
             url = configureDeprecated(url);
         }
         return url;

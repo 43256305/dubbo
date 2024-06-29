@@ -36,8 +36,10 @@ public abstract class AbstractCluster implements Cluster {
 
     private <T> Invoker<T> buildClusterInterceptors(AbstractClusterInvoker<T> clusterInvoker, String key) {
         AbstractClusterInvoker<T> last = clusterInvoker;
+        // xjh-根据reference.interceptor参数选出可用的ClusterIntercepter
         List<ClusterInterceptor> interceptors = ExtensionLoader.getExtensionLoader(ClusterInterceptor.class).getActivateExtension(clusterInvoker.getUrl(), key);
 
+        // xjh-类似invoker的filter，这里将所有ClusterInterceptor组装成一个拦截器链，链的最末尾为ClusterInvoker
         if (!interceptors.isEmpty()) {
             for (int i = interceptors.size() - 1; i >= 0; i--) {
                 final ClusterInterceptor interceptor = interceptors.get(i);
@@ -50,9 +52,11 @@ public abstract class AbstractCluster implements Cluster {
 
     @Override
     public <T> Invoker<T> join(Directory<T> directory) throws RpcException {
+        // xjh-使用doJoin方法构造ClusterInvoker，并将ClusterInterceptor组ClusterInvoker组成链表
         return buildClusterInterceptors(doJoin(directory), directory.getUrl().getParameter(REFERENCE_INTERCEPTOR_KEY));
     }
 
+    // xjh-根据directory生成ClusterInvoker
     protected abstract <T> AbstractClusterInvoker<T> doJoin(Directory<T> directory) throws RpcException;
 
     protected class InterceptorInvokerNode<T> extends AbstractClusterInvoker<T> {
@@ -88,7 +92,9 @@ public abstract class AbstractCluster implements Cluster {
         public Result invoke(Invocation invocation) throws RpcException {
             Result asyncResult;
             try {
+                // xjh-拦截器前置处理
                 interceptor.before(next, invocation);
+                // xjh-调用下一个拦截器
                 asyncResult = interceptor.intercept(next, invocation);
             } catch (Exception e) {
                 // onError callback
@@ -98,6 +104,7 @@ public abstract class AbstractCluster implements Cluster {
                 }
                 throw e;
             } finally {
+                // xjh-拦截器后置处理
                 interceptor.after(next, invocation);
             }
             return asyncResult.whenCompleteWithContext((r, t) -> {
@@ -105,6 +112,7 @@ public abstract class AbstractCluster implements Cluster {
                 if (interceptor instanceof ClusterInterceptor.Listener) {
                     ClusterInterceptor.Listener listener = (ClusterInterceptor.Listener) interceptor;
                     if (t == null) {
+                        // xjh-调用完成的回调方法
                         listener.onMessage(r, clusterInvoker, invocation);
                     } else {
                         listener.onError(t, clusterInvoker, invocation);

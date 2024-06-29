@@ -43,6 +43,7 @@ import static org.apache.dubbo.rpc.cluster.Constants.FAIL_BACK_TASKS_KEY;
 /**
  * When fails, record failure requests and schedule for retry on a regular interval.
  * Especially useful for services of notification.
+ * // xjh-invoke失败时，记录失败的请求，并且在一个固定的时间间隔后再次调用。适用于不需要要结果的远程调用，如通知。
  *
  * <a href="http://en.wikipedia.org/wiki/Failback">Failback</a>
  */
@@ -55,6 +56,7 @@ public class FailbackClusterInvoker<T> extends AbstractClusterInvoker<T> {
     /**
      * Number of retries obtained from the configuration, don't contain the first invoke.
      */
+    // xjh-重试次数，不包含第一次
     private final int retries;
 
     private final int failbackTasks;
@@ -87,8 +89,10 @@ public class FailbackClusterInvoker<T> extends AbstractClusterInvoker<T> {
                 }
             }
         }
+        // xjh-新建重试任务
         RetryTimerTask retryTimerTask = new RetryTimerTask(loadbalance, invocation, invokers, lastInvoker, retries, RETRY_FAILED_PERIOD);
         try {
+            // xjh-schedule用重试任务
             failTimer.newTimeout(retryTimerTask, RETRY_FAILED_PERIOD, TimeUnit.SECONDS);
         } catch (Throwable e) {
             logger.error("Failback background works error,invocation->" + invocation + ", exception: " + e.getMessage());
@@ -106,6 +110,7 @@ public class FailbackClusterInvoker<T> extends AbstractClusterInvoker<T> {
             logger.error("Failback to invoke method " + invocation.getMethodName() + ", wait for retry in background. Ignored exception: "
                     + e.getMessage() + ", ", e);
             if (retries > 0) {
+                // xjh-添加重试任务，注意之后重试就算成功，结果也不会返回
                 addFailed(loadbalance, invocation, invokers, invoker);
             }
             return AsyncRpcResult.newDefaultAsyncResult(null, null, invocation); // ignore

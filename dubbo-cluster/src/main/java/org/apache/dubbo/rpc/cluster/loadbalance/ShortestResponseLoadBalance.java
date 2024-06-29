@@ -31,6 +31,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * If there is only one invoker, use the invoker directly;
  * if there are multiple invokers and the weights are not the same, then random according to the total weight;
  * if there are multiple invokers and the same weight, then randomly called.
+ * // xjh-最短相应时间算法。
  */
 public class ShortestResponseLoadBalance extends AbstractLoadBalance {
 

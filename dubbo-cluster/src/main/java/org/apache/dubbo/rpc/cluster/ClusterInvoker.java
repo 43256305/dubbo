@@ -28,6 +28,7 @@ import org.apache.dubbo.rpc.Invoker;
  * In multi-registry subscription scenario, the final ClusterInvoker will refer to several sub ClusterInvokers, with each
  * sub ClusterInvoker representing one Registry. Take ZoneAwareClusterInvoker as an example, it is specially customized for
  * multi-registry use cases: first, pick up one ClusterInvoker, then do LB inside the chose ClusterInvoker.
+ * // xjh-ClusterInvoker为consumer端引用的最终invoker。一个ClusterInvoker包含一组正常的invoker，并且还提供了LB和HA功能。
  *
  * @param <T>
  */

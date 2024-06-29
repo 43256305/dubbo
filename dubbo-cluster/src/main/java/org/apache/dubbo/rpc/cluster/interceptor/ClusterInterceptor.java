@@ -25,6 +25,7 @@ import org.apache.dubbo.rpc.cluster.support.AbstractClusterInvoker;
 
 /**
  * Different from {@link Filter}, ClusterInterceptor works at the outmost layer, before one specific address/invoker is picked.
+ * // xjh-拦截器，用于invoker被选出之前/或者invoke之后使用。即ClusterInvoker的invoke方法之前/或者invoke之后调用。
  */
 @SPI
 public interface ClusterInterceptor {

@@ -30,6 +30,8 @@ import java.util.concurrent.ThreadLocalRandom;
  * If the weights are different then it will use random.nextInt(w1 + w2 + ... + wn)
  * Note that if the performance of the machine is better than others, you can set a larger weight.
  * If the performance is not so good, you can set a smaller weight.
+ *
+ * // xjh-加权随机算法，dubbo默认使用的算法。性能好的provider可以提供更高的权值。
  */
 public class RandomLoadBalance extends AbstractLoadBalance {
 

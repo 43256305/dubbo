@@ -126,11 +126,12 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
      * b) Reselection, the validation rule for reselection: selected > available. This rule guarantees that
      * the selected invoker has the minimum chance to be one in the previously selected list, and also
      * guarantees this invoker is available.
+     * // xjh-使用LB选出一个invoker。另外还加上了粘滞连接特性。
      *
      * @param loadbalance load balance policy
      * @param invocation  invocation
      * @param invokers    invoker candidates
-     * @param selected    exclude selected invokers or not
+     * @param selected    exclude selected invokers or not  // xjh-此参数为负载均衡已经选出来，使用过但是失败的invoker
      * @return the invoker which will final to do invoke.
      * @throws RpcException exception
      */
@@ -142,23 +143,28 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
         }
         String methodName = invocation == null ? StringUtils.EMPTY_STRING : invocation.getMethodName();
 
+        // xjh-开启了粘滞连接功能
         boolean sticky = invokers.get(0).getUrl()
                 .getMethodParameter(methodName, CLUSTER_STICKY_KEY, DEFAULT_CLUSTER_STICKY);
 
         //ignore overloaded method
+        // xjh-如果stickInvoker服务不可获取，则将其置空
         if (stickyInvoker != null && !invokers.contains(stickyInvoker)) {
             stickyInvoker = null;
         }
         //ignore concurrency problem
+        // xjh-如果stickyInvoker可用，则直接返回
         if (sticky && stickyInvoker != null && (selected == null || !selected.contains(stickyInvoker))) {
             if (availablecheck && stickyInvoker.isAvailable()) {
                 return stickyInvoker;
             }
         }
 
+        // xjh-如果stickyInvoker不可用，则使用负载均衡算法选出某个invoker
         Invoker<T> invoker = doSelect(loadbalance, invocation, invokers, selected);
 
         if (sticky) {
+            // xjh-记录此次选择的invoker为stickInvoker
             stickyInvoker = invoker;
         }
         return invoker;
@@ -173,12 +179,14 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
         if (invokers.size() == 1) {
             return invokers.get(0);
         }
+        // xjh-调用LB选出invoker
         Invoker<T> invoker = loadbalance.select(invokers, getUrl(), invocation);
 
         //If the `invoker` is in the  `selected` or invoker is unavailable && availablecheck is true, reselect.
         if ((selected != null && selected.contains(invoker))
                 || (!invoker.isAvailable() && getUrl() != null && availablecheck)) {
             try {
+                // xjh-如果选出的invoker不可用，则重新选举
                 Invoker<T> rInvoker = reselect(loadbalance, invocation, invokers, selected, availablecheck);
                 if (rInvoker != null) {
                     invoker = rInvoker;
@@ -219,6 +227,7 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
                 invokers.size() > 1 ? (invokers.size() - 1) : invokers.size());
 
         // First, try picking a invoker not in `selected`.
+        // xjh-挑出没有使用过的invoker
         for (Invoker<T> invoker : invokers) {
             if (availablecheck && !invoker.isAvailable()) {
                 continue;
@@ -229,10 +238,12 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
             }
         }
 
+        // xjh-使用LB在没有使用过的invoker中选举
         if (!reselectInvokers.isEmpty()) {
             return loadbalance.select(reselectInvokers, getUrl(), invocation);
         }
 
+        // xjh-如果invoker都使用过，则直接使用LB选出一个可用的
         // Just pick an available invoker using loadbalance policy
         if (selected != null) {
             for (Invoker<T> invoker : selected) {
@@ -254,14 +265,18 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
         checkWhetherDestroyed();
 
         // binding attachments into invocation.
+        // xjh-将attachment从线程上下文中取出并放入invocation
         Map<String, Object> contextAttachments = RpcContext.getContext().getObjectAttachments();
         if (contextAttachments != null && contextAttachments.size() != 0) {
             ((RpcInvocation) invocation).addObjectAttachments(contextAttachments);
         }
 
+        // xjh-从directory中列出与当前consumer匹配的所有invoker
         List<Invoker<T>> invokers = list(invocation);
+        // xjh-取出负载均衡算法
         LoadBalance loadbalance = initLoadBalance(invokers, invocation);
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
+        // xjh-真正invoke
         return doInvoke(invocation, invokers, loadbalance);
     }
 

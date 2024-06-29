@@ -31,6 +31,7 @@ import java.util.List;
 
 /**
  * BroadcastClusterInvoker
+ * // xjh-会诸葛调用每个provider节点，其中任意一个provider报错都会在全部调用结束之后抛出异常，通常用于通知类操作。
  */
 public class BroadcastClusterInvoker<T> extends AbstractClusterInvoker<T> {
 

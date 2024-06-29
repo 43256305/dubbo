@@ -18,6 +18,7 @@ package org.apache.dubbo.rpc.cluster;
 
 import org.apache.dubbo.common.extension.SPI;
 
+// xjh-用于MergeableClusterInvoker中合并返回值使用
 @SPI
 public interface Merger<T> {
 

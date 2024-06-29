@@ -45,6 +45,8 @@ import static org.apache.dubbo.rpc.Constants.MERGER_KEY;
 
 /**
  * @param <T>
+ *
+ * // xjh-会对多个provider节点返回结果合并。
  */
 @SuppressWarnings("unchecked")
 public class MergeableClusterInvoker<T> extends AbstractClusterInvoker<T> {

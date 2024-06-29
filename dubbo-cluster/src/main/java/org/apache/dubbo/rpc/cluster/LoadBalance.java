@@ -38,6 +38,7 @@ public interface LoadBalance {
 
     /**
      * select one invoker in list.
+     * xjh-使用负载均衡算法从一系列匹配的invokers中选出某个invoker
      *
      * @param invokers   invokers.
      * @param url        refer url
