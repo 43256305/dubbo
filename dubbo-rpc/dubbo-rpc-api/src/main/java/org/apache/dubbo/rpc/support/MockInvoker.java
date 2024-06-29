@@ -106,9 +106,11 @@ final public class MockInvoker<T> implements Invoker<T> {
             throw new RpcException(new IllegalAccessException("mock can not be null. url :" + url));
         }
         mock = normalizeMock(URL.decode(mock));
+        // xjh-mock参数以return开头
         if (mock.startsWith(RETURN_PREFIX)) {
             mock = mock.substring(RETURN_PREFIX.length()).trim();
             try {
+                // xjh-获取返回值类型，解析返回值，直接返回
                 Type[] returnTypes = RpcUtils.getReturnTypes(invocation);
                 Object value = parseMockValue(mock, returnTypes);
                 return AsyncRpcResult.newDefaultAsyncResult(value, invocation);
@@ -116,6 +118,7 @@ final public class MockInvoker<T> implements Invoker<T> {
                 throw new RpcException("mock return invoke error. method :" + invocation.getMethodName()
                         + ", mock:" + mock + ", url: " + url, ew);
             }
+            // xjh-mock参数以throw开头，则直接抛出异常
         } else if (mock.startsWith(THROW_PREFIX)) {
             mock = mock.substring(THROW_PREFIX.length()).trim();
             if (StringUtils.isBlank(mock)) {
@@ -124,8 +127,10 @@ final public class MockInvoker<T> implements Invoker<T> {
                 Throwable t = getThrowable(mock);
                 throw new RpcException(RpcException.BIZ_EXCEPTION, t);
             }
+            // xjh-实现mock调用
         } else { //impl mock
             try {
+                // xjh-返回mockInvoker
                 Invoker<T> invoker = getInvoker(mock);
                 return invoker.invoke(invocation);
             } catch (Throwable t) {
@@ -157,17 +162,21 @@ final public class MockInvoker<T> implements Invoker<T> {
 
     @SuppressWarnings("unchecked")
     private Invoker<T> getInvoker(String mock) {
+        // xjh-获取mock接口
         Class<T> serviceType = (Class<T>) ReflectUtils.forName(url.getServiceInterface());
 
         final boolean isDefault = ConfigUtils.isDefault(mock);
         // convert to actual mock service name
         String mockService = isDefault ? serviceType.getName() + "Mock" : mock;
+        // xjh-如果缓存中包含，则直接返回
         Invoker<T> invoker = (Invoker<T>) MOCK_MAP.get(mockService);
         if (invoker != null) {
             return invoker;
         }
 
+        // xjh-使用反射创建mock对象
         T mockObject = (T) getMockObject(mock, serviceType);
+        // xjh-获取代理
         invoker = PROXY_FACTORY.getInvoker(mockObject, serviceType, url);
         if (MOCK_MAP.size() < 10000) {
             MOCK_MAP.put(mockService, invoker);
@@ -205,6 +214,7 @@ final public class MockInvoker<T> implements Invoker<T> {
         }
 
         try {
+            // xjh-根据mockClass创建对象
             return mockClass.newInstance();
         } catch (InstantiationException e) {
             throw new IllegalStateException("No default constructor from mock class " + mockClass.getName(), e);

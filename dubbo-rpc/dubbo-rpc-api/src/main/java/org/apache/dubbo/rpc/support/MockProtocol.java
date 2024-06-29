@@ -24,6 +24,7 @@ import org.apache.dubbo.rpc.protocol.AbstractProtocol;
 
 /**
  * MockProtocol is used for generating a mock invoker by URL and type on consumer side
+ * // xjh-仅仅被consumer使用，所以export方法报错。
  */
 final public class MockProtocol extends AbstractProtocol {
 
@@ -39,6 +40,7 @@ final public class MockProtocol extends AbstractProtocol {
 
     @Override
     public <T> Invoker<T> protocolBindingRefer(Class<T> type, URL url) throws RpcException {
+        // xjh-这里返回MockInvoker
         return new MockInvoker<>(url, type);
     }
 }

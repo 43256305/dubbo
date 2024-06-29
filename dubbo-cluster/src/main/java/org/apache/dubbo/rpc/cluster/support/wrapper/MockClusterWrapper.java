@@ -24,6 +24,7 @@ import org.apache.dubbo.rpc.cluster.Directory;
 /**
  * mock impl
  *
+ * // xjh-mock机制，使用了Wrapper机制
  */
 public class MockClusterWrapper implements Cluster {
 

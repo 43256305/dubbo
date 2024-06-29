@@ -36,6 +36,7 @@ import java.util.List;
 import static org.apache.dubbo.rpc.Constants.MOCK_KEY;
 import static org.apache.dubbo.rpc.cluster.Constants.INVOCATION_NEED_MOCK;
 
+// xjh-
 public class MockClusterInvoker<T> implements ClusterInvoker<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(MockClusterInvoker.class);
@@ -93,10 +94,10 @@ public class MockClusterInvoker<T> implements ClusterInvoker<T> {
         Result result = null;
 
         String value = getUrl().getMethodParameter(invocation.getMethodName(), MOCK_KEY, Boolean.FALSE.toString()).trim();
-        if (value.length() == 0 || "false".equalsIgnoreCase(value)) {
+        if (value.length() == 0 || "false".equalsIgnoreCase(value)) { // xjh-没有开启mock
             //no mock
             result = this.invoker.invoke(invocation);
-        } else if (value.startsWith("force")) {
+        } else if (value.startsWith("force")) { // xjh-开启了mock
             if (logger.isWarnEnabled()) {
                 logger.warn("force-mock: " + invocation.getMethodName() + " force-mock enabled , url : " + getUrl());
             }
@@ -136,6 +137,7 @@ public class MockClusterInvoker<T> implements ClusterInvoker<T> {
         Result result = null;
         Invoker<T> minvoker;
 
+        // xjh-获取mockInvoker
         List<Invoker<T>> mockInvokers = selectMockInvoker(invocation);
         if (CollectionUtils.isEmpty(mockInvokers)) {
             minvoker = (Invoker<T>) new MockInvoker(getUrl(), directory.getInterface());
@@ -143,6 +145,7 @@ public class MockClusterInvoker<T> implements ClusterInvoker<T> {
             minvoker = mockInvokers.get(0);
         }
         try {
+            // xjh-调用mockInvoker的invoke方法
             result = minvoker.invoke(invocation);
         } catch (RpcException me) {
             if (me.isBiz()) {
@@ -178,9 +181,11 @@ public class MockClusterInvoker<T> implements ClusterInvoker<T> {
         //TODO generic invoker？
         if (invocation instanceof RpcInvocation) {
             //Note the implicit contract (although the description is added to the interface declaration, but extensibility is a problem. The practice placed in the attachment needs to be improved)
+            // xjh-将invocation.need.mock参数设置为true
             ((RpcInvocation) invocation).setAttachment(INVOCATION_NEED_MOCK, Boolean.TRUE.toString());
             //directory will return a list of normal invokers if Constants.INVOCATION_NEED_MOCK is absent or not true in invocation, otherwise, a list of mock invokers will return.
             try {
+                // xjh-这里将会返回mockInvoker
                 invokers = directory.list(invocation);
             } catch (RpcException e) {
                 if (logger.isInfoEnabled()) {
