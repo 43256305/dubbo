@@ -64,16 +64,22 @@ public abstract class DynamicDirectory<T> extends AbstractDirectory<T> implement
 
     private static final Logger logger = LoggerFactory.getLogger(DynamicDirectory.class);
 
+    // xjh-通过spi机制获取Cluster
     protected static final Cluster CLUSTER = ExtensionLoader.getExtensionLoader(Cluster.class).getAdaptiveExtension();
 
+    // xjh-通过spi机制获取RouterFactory
     protected static final RouterFactory ROUTER_FACTORY = ExtensionLoader.getExtensionLoader(RouterFactory.class)
             .getAdaptiveExtension();
 
+    // xjh-服务对应的 ServiceKey，默认是 {interface}:[group]:[version] 三部分构成。
     protected final String serviceKey; // Initialization at construction time, assertion not null
+    // xjh-服务接口类型，例如，org.apache.dubbo.demo.DemoService，即远程调用的接口。
     protected final Class<T> serviceType; // Initialization at construction time, assertion not null
+    // xjh-只保留 Consumer 属性的 URL，也就是由 queryMap 集合重新生成的 URL
     protected final URL directoryUrl; // Initialization at construction time, assertion not null, and always assign non null value
     protected final boolean multiGroup;
     protected Protocol protocol; // Initialization at the time of injection, the assertion is not null
+    // xjh-使用的注册中心实现。
     protected Registry registry; // Initialization at the time of injection, the assertion is not null
     protected volatile boolean forbidden = false;
     protected boolean shouldRegister;
@@ -88,6 +94,7 @@ public abstract class DynamicDirectory<T> extends AbstractDirectory<T> implement
      * Priority: override>-D>consumer>provider
      * Rule one: for a certain provider <ip:port,timeout=100>
      * Rule two: for all providers <* ,timeout=5000>
+     *     xjh-动态更新的配置信息
      */
     protected volatile List<Configurator> configurators; // The initial value is null and the midway may be assigned to null, please use the local variable reference
 
@@ -115,9 +122,11 @@ public abstract class DynamicDirectory<T> extends AbstractDirectory<T> implement
         this.shouldRegister = !ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(REGISTER_KEY, true);
         this.shouldSimplified = url.getParameter(SIMPLIFIED_KEY, false);
 
+        // xjh-远程调用接口
         this.serviceType = serviceType;
         this.serviceKey = super.getConsumerUrl().getServiceKey();
 
+        // xjh-将queryMap中的KV作为参数，重新构造URL，其中的protocol和path部分不变
         this.overrideDirectoryUrl = this.directoryUrl = turnRegistryUrlToConsumerUrl(url);
         String group = directoryUrl.getParameter(GROUP_KEY, "");
         this.multiGroup = group != null && (ANY_VALUE.equals(group) || group.contains(","));

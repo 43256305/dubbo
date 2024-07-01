@@ -29,12 +29,15 @@ import java.util.List;
  * <p>
  * <a href="http://en.wikipedia.org/wiki/Directory_service">Directory Service</a>
  *
+ * xjh-表示多个 Invoker 的集合，是后续路由规则、负载均衡策略以及集群容错的基础。
+ *
  * @see org.apache.dubbo.rpc.cluster.Cluster#join(Directory)
  */
 public interface Directory<T> extends Node {
 
     /**
      * get service type.
+     * xjh-服务接口类型
      *
      * @return service type.
      */
@@ -42,7 +45,7 @@ public interface Directory<T> extends Node {
 
     /**
      * list invokers.
-     * xjh-关键方法，列出invoker
+     * xjh-关键方法，根据invocation，列出invoker
      *
      * @return invokers
      */

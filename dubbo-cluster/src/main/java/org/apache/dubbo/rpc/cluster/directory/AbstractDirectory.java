@@ -40,18 +40,24 @@ import static org.apache.dubbo.rpc.cluster.Constants.REFER_KEY;
 
 /**
  * Abstract implementation of Directory: Invoker list returned from this Directory's list method have been filtered by Routers
+ * xjh-Directory接口的基本实现。
+ * RegistryDirectory 实现中维护的 Invoker 集合会随着注册中心中维护的注册信息动态发生变化，这就依赖了 ZooKeeper 等注册中心的推送能力。
+ * StaticDirectory 实现中维护的 Invoker 集合则是静态的，在 StaticDirectory 对象创建完成之后，不会再发生变化。
  */
 public abstract class AbstractDirectory<T> implements Directory<T> {
 
     // logger
     private static final Logger logger = LoggerFactory.getLogger(AbstractDirectory.class);
 
+
     private final URL url;
 
     private volatile boolean destroyed = false;
 
+    // xjh-consumer端的url
     protected volatile URL consumerUrl;
 
+    // xjh-Consumer URL 中 refer 参数解析后得到的全部 KV。
     protected final Map<String, String> queryMap; // Initialization at construction time, assertion not null
     protected final String consumedProtocol;
 
@@ -70,6 +76,7 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
             throw new IllegalArgumentException("url == null");
         }
 
+        // xjh-解析refer参数值，得到其中Consumer的属性信息
         this.queryMap = StringUtils.parseQueryString(url.getParameterAndDecoded(REFER_KEY));
         this.consumedProtocol = this.queryMap.get(PROTOCOL_KEY) == null ? DUBBO : this.queryMap.get(PROTOCOL_KEY);
         this.url = url.removeParameter(REFER_KEY).removeParameter(MONITOR_KEY);

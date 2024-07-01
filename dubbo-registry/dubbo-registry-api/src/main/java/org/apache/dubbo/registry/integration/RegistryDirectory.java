@@ -72,6 +72,8 @@ import static org.apache.dubbo.rpc.cluster.Constants.ROUTER_KEY;
 
 /**
  * RegistryDirectory
+ *
+ * xjh-动态的 Directory 实现，实现了 NotifyListener 接口，当注册中心的服务配置发生变化时，RegistryDirectory 会收到变更通知，然后RegistryDirectory 会根据注册中心推送的通知，动态增删底层 Invoker 集合。
  */
 public class RegistryDirectory<T> extends DynamicDirectory<T> {
     private static final Logger logger = LoggerFactory.getLogger(RegistryDirectory.class);
@@ -90,11 +92,14 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
         super(serviceType, url);
     }
 
+    // xjh-该方法会在 Consumer 进行订阅的时候被调用，其中调用 Registry 的 subscribe() 完成订阅操作，同时还会将当前 RegistryDirectory 对象作为 NotifyListener 监听器添加到 Registry 中
     @Override
     public void subscribe(URL url) {
         setConsumerUrl(url);
+        // xjh-将当前RegistryDirectory对象作为ConfigurationListener记录到CONSUMER_CONFIGURATION_LISTENER中
         CONSUMER_CONFIGURATION_LISTENER.addNotifyListener(this);
         referenceConfigurationListener = new ReferenceConfigurationListener(this, url);
+        // xjh-调用注册中心的订阅操作
         registry.subscribe(url, this);
     }
 

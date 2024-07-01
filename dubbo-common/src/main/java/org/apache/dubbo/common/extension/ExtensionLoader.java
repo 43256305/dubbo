@@ -698,7 +698,7 @@ public class ExtensionLoader<T> {
                             // xjh-将当前 instance 作为参数传给 Wrapper 的构造方法，并通过反射创建 Wrapper 实例。
                             // 然后向 Wrapper 实例中注入依赖，最后将 Wrapper 实例再次赋值给 instance 变量
                             // 相当于在我们的实现类的外面包装了一个类，帮我们做一些额外的操作
-                            // filter链机制即时使用了此机制给默认的DubboProtocol的export与refer方法之前加上了过滤器链
+                            // filter链机制即是使用了此机制给默认的DubboProtocol的export与refer方法之前加上了过滤器链
                             instance = injectExtension((T) wrapperClass.getConstructor(type).newInstance(instance));
                         }
                     }

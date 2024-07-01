@@ -53,6 +53,7 @@ public class StaticDirectory<T> extends AbstractDirectory<T> {
         if (CollectionUtils.isEmpty(invokers)) {
             throw new IllegalArgumentException("invokers == null");
         }
+        // xjh-保存invokers
         this.invokers = invokers;
     }
 
@@ -92,7 +93,9 @@ public class StaticDirectory<T> extends AbstractDirectory<T> {
     }
 
     public void buildRouterChain() {
+        // xjh-创建内置Router集合
         RouterChain<T> routerChain = RouterChain.buildChain(getUrl());
+        // xjh-将invokers与RouterChain关联
         routerChain.setInvokers(invokers);
         this.setRouterChain(routerChain);
     }
@@ -102,7 +105,7 @@ public class StaticDirectory<T> extends AbstractDirectory<T> {
         List<Invoker<T>> finalInvokers = invokers;
         if (routerChain != null) {
             try {
-                // xjh-根据consumerUrl获取invoker
+                // xjh-根据consumerUrl与invocation路由匹配的invoker列表
                 finalInvokers = routerChain.route(getConsumerUrl(), invocation);
             } catch (Throwable t) {
                 logger.error("Failed to execute router: " + getUrl() + ", cause: " + t.getMessage(), t);

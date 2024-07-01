@@ -39,6 +39,7 @@ public interface RegistryService {
      * 3. When the URL sets category=routers, it means classified storage, the default category is providers, and the data can be notified by the classified section. <br>
      * 4. When the registry is restarted, network jitter, data can not be lost, including automatically deleting data from the broken line.<br>
      * 5. Allow URLs which have the same URL but different parameters to coexist,they can't cover each other.<br>
+     * xjh-将服务提供者的信息注册到注册中心
      *
      * @param url  Registration information , is not allowed to be empty, e.g: dubbo://10.20.153.10/org.apache.dubbo.foo.BarService?version=1.0.0&application=kylin
      */
@@ -50,6 +51,7 @@ public interface RegistryService {
      * Unregistering is required to support the contract:<br>
      * 1. If it is the persistent stored data of dynamic=false, the registration data can not be found, then the IllegalStateException is thrown, otherwise it is ignored.<br>
      * 2. Unregister according to the full url match.<br>
+     * xjh-将服务提供者的信息从注册中心注销
      *
      * @param url Registration information , is not allowed to be empty, e.g: dubbo://10.20.153.10/org.apache.dubbo.foo.BarService?version=1.0.0&application=kylin
      */
@@ -66,6 +68,7 @@ public interface RegistryService {
      * 5. When the registry is restarted and network jitter, it is necessary to automatically restore the subscription request.<br>
      * 6. Allow URLs which have the same URL but different parameters to coexist,they can't cover each other.<br>
      * 7. The subscription process must be blocked, when the first notice is finished and then returned.<br>
+     * xjh-服务消费者订阅服务，当服务信息发生变化时，注册中心会通知订阅者
      *
      * @param url      Subscription condition, not allowed to be empty, e.g. consumer://10.20.153.10/org.apache.dubbo.foo.BarService?version=1.0.0&application=kylin
      * @param listener A listener of the change event, not allowed to be empty
