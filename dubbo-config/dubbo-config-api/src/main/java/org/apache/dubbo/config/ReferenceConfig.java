@@ -88,6 +88,8 @@ import static org.apache.dubbo.rpc.cluster.Constants.REFER_KEY;
 /**
  * Please avoid using this class for any new application,
  * use {@link ReferenceConfigBase} instead.
+ *
+ * xjh-一个 ReferenceConfig 对象对应一个服务接口，每个 ReferenceConfig 对象中都封装了与注册中心的网络连接，以及与 Provider 的网络连接。
  */
 public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
 
@@ -107,7 +109,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
      * Actually，when the {@link ExtensionLoader} init the {@link Protocol} instants,it will automatically wraps two
      * layers, and eventually will get a <b>ProtocolFilterWrapper</b> or <b>ProtocolListenerWrapper</b>
      *
-     * xjh-加载DubboProtocol
+     * xjh-加载RegisterProtocol
      */
     private static final Protocol REF_PROTOCOL = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
 
@@ -125,6 +127,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
 
     /**
      * The interface proxy reference
+     * xjh-服务引用对象，即consumer端引用的远程调用接口代理对象
      */
     private transient volatile T ref;
 
@@ -205,6 +208,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
             throw new IllegalStateException("The invoker of ReferenceConfig(" + url + ") has already destroyed!");
         }
         if (ref == null) {
+            // xjh-初始化服务引用
             init();
         }
         // xjh-返回代理对象ref
@@ -252,7 +256,9 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         checkStubAndLocal(interfaceClass);
         ConfigValidationUtils.checkMock(interfaceClass, this);
 
+        // xjh-将各种参数放入map中
         Map<String, String> map = new HashMap<String, String>();
+        // xjh-属于consumer端
         map.put(SIDE_KEY, CONSUMER_SIDE);
 
         ReferenceConfigBase.appendRuntimeParameters(map);
@@ -283,6 +289,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
             map.putIfAbsent(METADATA_KEY, REMOTE_METADATA_STORAGE_TYPE);
         }
         Map<String, AsyncMethodInfo> attributes = null;
+        // xjh-将方法/方法参数等放入map
         if (CollectionUtils.isNotEmpty(getMethods())) {
             attributes = new HashMap<>();
             for (MethodConfig methodConfig : getMethods()) {
@@ -309,6 +316,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
             throw new IllegalArgumentException(
                     "Specified invalid registry ip from property:" + DUBBO_IP_TO_REGISTRY + ", value:" + hostToRegistry);
         }
+        // xjh-添加ip
         map.put(REGISTER_IP_KEY, hostToRegistry);
 
         serviceMetadata.getAttachments().putAll(map);
@@ -327,6 +335,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         checkInvokerAvailable();
 
         // dispatch a ReferenceConfigInitializedEvent since 2.7.4
+        // xjh-触发ReferenceConfigInitializedEvent事件
         dispatch(new ReferenceConfigInitializedEvent(this, invoker));
     }
 
@@ -364,6 +373,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                     // xjh-加载注册中心url
                     List<URL> us = ConfigValidationUtils.loadRegistries(this, false);
                     if (CollectionUtils.isNotEmpty(us)) {
+                        // xjh-遍历所有注册中心
                         for (URL u : us) {
                             URL monitorUrl = ConfigValidationUtils.loadMonitor(this, u);
                             if (monitorUrl != null) {
@@ -384,14 +394,16 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
 
             // xjh-单个注册中心
             if (urls.size() == 1) {
-                // xjh-调用Protocol::refer创建invoker
+                // xjh-调用RegisterProtocol.refer方法，生成invoker
                 invoker = REF_PROTOCOL.refer(interfaceClass, urls.get(0));
-            } else {
+            } else { // xjh-多个注册中心
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
                 URL registryURL = null;
+                // 遍历所有注册中心，调用refer方法，为每个注册中心生成invoker
                 for (URL url : urls) {
                     // For multi-registry scenarios, it is not checked whether each referInvoker is available.
                     // Because this invoker may become available later.
+                    // xjh-调用RegisterProtocol.refer方法，生成invoker。如果是直连provider，则为DubboProtocol
                     invokers.add(REF_PROTOCOL.refer(interfaceClass, url));
 
                     if (UrlUtils.isRegistry(url)) {
@@ -401,10 +413,13 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
 
                 if (registryURL != null) { // registry url is available
                     // for multi-subscription scenario, use 'zone-aware' policy by default
+                    // xjh-多注册中心，默认会使用ZoneAwareCluster
                     String cluster = registryURL.getParameter(CLUSTER_KEY, ZoneAwareCluster.NAME);
                     // The invoker wrap sequence would be: ZoneAwareClusterInvoker(StaticDirectory) -> FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
+                    // xjh-将invoker包装在Cluster中。层级关系：ZoneAwareClusterInvoker(StaticDirectory) -> FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
                     invoker = Cluster.getCluster(cluster, false).join(new StaticDirectory(registryURL, invokers));
                 } else { // not a registry url, must be direct invoke.
+                    // xjh-多provider直连场景
                     String cluster = CollectionUtils.isNotEmpty(invokers)
                             ?
                             (invokers.get(0).getUrl() != null ? invokers.get(0).getUrl().getParameter(CLUSTER_KEY, ZoneAwareCluster.NAME) :

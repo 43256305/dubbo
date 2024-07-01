@@ -38,6 +38,8 @@ import static org.apache.dubbo.common.BaseServiceMetadata.buildServiceKey;
  * for the framework which create {@link ReferenceConfigBase} frequently.
  * <p>
  * You can implement and use your own {@link ReferenceConfigBase} cache if you need use complicate strategy.
+ *
+ * xjh-专门用于缓存ReferenceConfigBase
  */
 public class ReferenceConfigCache {
     public static final String DEFAULT_NAME = "_DEFAULT_";
@@ -45,6 +47,7 @@ public class ReferenceConfigCache {
      * Create the key with the <b>Group</b>, <b>Interface</b> and <b>version</b> attribute of {@link ReferenceConfigBase}.
      * <p>
      * key example: <code>group1/org.apache.dubbo.foo.FooService:1.0.0</code>.
+     * xjh-存储的ReferenceConfigBase的key
      */
     public static final KeyGenerator DEFAULT_KEY_GENERATOR = referenceConfig -> {
         String iName = referenceConfig.getInterface();
@@ -63,8 +66,10 @@ public class ReferenceConfigCache {
     private final String name;
     private final KeyGenerator generator;
 
+    // xjh-ReferenceConfigBase缓存
     private final ConcurrentMap<String, ReferenceConfigBase<?>> referredReferences = new ConcurrentHashMap<>();
 
+    // xjh-存储consumer端服务接口的代理对象。第一层key为服务接口类型，第二层key为DEFAULT_KEY_GENERATOR生成。
     private final ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> proxies = new ConcurrentHashMap<>();
 
     private ReferenceConfigCache(String name, KeyGenerator generator) {
@@ -98,14 +103,20 @@ public class ReferenceConfigCache {
 
     @SuppressWarnings("unchecked")
     public <T> T get(ReferenceConfigBase<T> referenceConfig) {
+        // xjh-生成key
         String key = generator.generateKey(referenceConfig);
+        // xjh-获取类型
         Class<?> type = referenceConfig.getInterfaceClass();
 
         proxies.computeIfAbsent(type, _t -> new ConcurrentHashMap<>());
 
+        // xjh-根据类型从proxies缓存中获取map
         ConcurrentMap<String, Object> proxiesOfType = proxies.get(type);
+        // xjh-生成服务引用并放入proxies缓存
         proxiesOfType.computeIfAbsent(key, _k -> {
+            // xjh-服务引用
             Object proxy = referenceConfig.get();
+            // xjh-放入referredReferences缓存
             referredReferences.put(key, referenceConfig);
             return proxy;
         });

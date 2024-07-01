@@ -62,6 +62,7 @@ public class MigrationRuleHandler<T> {
                     break;
                 case FORCE_INTERFACE:
                 default:
+                    // xjh-默认走这里
                     migrationInvoker.fallbackToInterfaceInvoker();
             }
         }

@@ -196,8 +196,10 @@ public class RegistryProtocol implements Protocol {
 
     @Override
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
+        // xjh-将"registry://"协议转换成"zookeeper://"协议
         URL registryUrl = getRegistryUrl(originInvoker);
         // url to export locally
+        // xjh-转换为"dubbo://"协议的ProviderURL
         URL providerUrl = getProviderUrl(originInvoker);
 
         // Subscribe the override data
@@ -210,15 +212,18 @@ public class RegistryProtocol implements Protocol {
 
         providerUrl = overrideUrlWithConfig(providerUrl, overrideSubscribeListener);
         // export invoker
+        // xjh-导出服务，底层会通过DubboProtocol.export()方法，启动对应的Server
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker, providerUrl);
 
         // url to registry
+        // xjh-根据url获取注册中心
         final Registry registry = getRegistry(originInvoker);
         final URL registeredProviderUrl = getUrlToRegistry(providerUrl, registryUrl);
 
         // decide if we need to delay publish
         boolean register = providerUrl.getParameter(REGISTER_KEY, true);
         if (register) {
+            // xjh-注册到注册中心
             registry.register(registeredProviderUrl);
         }
 
@@ -232,6 +237,7 @@ public class RegistryProtocol implements Protocol {
         // Deprecated! Subscribe to override rules in 2.6.x or before.
         registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);
 
+        // xjh-触发RegistryProtocolListener::onExport回调
         notifyExport(exporter);
         //Ensure that a new exporter instance is returned every time export
         return new DestroyableExporter<>(exporter);
@@ -259,7 +265,9 @@ public class RegistryProtocol implements Protocol {
         String key = getCacheKey(originInvoker);
 
         return (ExporterChangeableWrapper<T>) bounds.computeIfAbsent(key, s -> {
+            // xjh-将invoker封装到InvokerDelegate中，当前invoker类型为DelegateProviderMetaDataInvoker
             Invoker<?> invokerDelegate = new InvokerDelegate<>(originInvoker, providerUrl);
+            // xjh-执行DubboProtocol.export()方法
             return new ExporterChangeableWrapper<>((Exporter<T>) protocol.export(invokerDelegate), originInvoker);
         });
     }
@@ -460,7 +468,9 @@ public class RegistryProtocol implements Protocol {
     @Override
     @SuppressWarnings("unchecked")
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
+        // xjh-获取注册中心url
         url = getRegistryUrl(url);
+        // xjh-获取注册中心
         Registry registry = getRegistry(url);
         if (RegistryService.class.equals(type)) {
             return proxyFactory.getInvoker((T) registry, type, url);
@@ -469,18 +479,23 @@ public class RegistryProtocol implements Protocol {
         // group="a,b" or group="*"
         Map<String, String> qs = StringUtils.parseQueryString(url.getParameterAndDecoded(REFER_KEY));
         String group = qs.get(GROUP_KEY);
+        // xjh-多个group场景，默认使用MergeableCluster
         if (group != null && group.length() > 0) {
             if ((COMMA_SPLIT_PATTERN.split(group)).length > 1 || "*".equals(group)) {
                 return doRefer(Cluster.getCluster(MergeableCluster.NAME), registry, type, url, qs);
             }
         }
 
+        // 没有或单个group场景
+        // xjh-获取Cluster，默认为MockClusterWrapper->FailoverCluster
         Cluster cluster = Cluster.getCluster(qs.get(CLUSTER_KEY));
         return doRefer(cluster, registry, type, url, qs);
     }
 
     protected <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url, Map<String, String> parameters) {
+        // xjh-构造consumer url
         URL consumerUrl = new URL(CONSUMER_PROTOCOL, parameters.remove(REGISTER_IP_KEY), 0, type.getName(), parameters);
+        // xjh-构造MigrationInvoker
         ClusterInvoker<T> migrationInvoker = getMigrationInvoker(this, cluster, registry, type, url, consumerUrl);
         return interceptInvoker(migrationInvoker, url, consumerUrl);
     }
@@ -496,6 +511,7 @@ public class RegistryProtocol implements Protocol {
             return invoker;
         }
 
+        // xjh-默认走MigrationRuleListener
         for (RegistryProtocolListener listener : listeners) {
             listener.onRefer(this, invoker, consumerUrl);
         }
@@ -521,11 +537,15 @@ public class RegistryProtocol implements Protocol {
         URL urlToRegistry = new URL(CONSUMER_PROTOCOL, parameters.remove(REGISTER_IP_KEY), 0, type.getName(), parameters);
         if (directory.isShouldRegister()) {
             directory.setRegisteredConsumerUrl(urlToRegistry);
+            // xjh-向注册中心注册consumer url
             registry.register(directory.getRegisteredConsumerUrl());
         }
+        // xjh-创建路由器链
         directory.buildRouterChain(urlToRegistry);
+        // xjh-订阅
         directory.subscribe(toSubscribeUrl(urlToRegistry));
 
+        // 调用join方法
         return (ClusterInvoker<T>) cluster.join(directory);
     }
 

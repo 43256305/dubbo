@@ -881,11 +881,14 @@ public class DubboBootstrap {
         if (started.compareAndSet(false, true)) {
             destroyed.set(false);
             ready.set(false);
+            // xjh-初始化一些基础组件，例如，配置中心相关组件、事件监听、元数据相关组件
             initialize();
             if (logger.isInfoEnabled()) {
                 logger.info(NAME + " is starting...");
             }
             // 1. export Dubbo Services
+            // xjh-重点，发布服务
+            // 它是服务发布核心逻辑的入口，其中每一个服务接口都会转换为对应的 ServiceConfig 实例，然后通过代理的方式转换成 Invoker，最终转换成 Exporter 进行发布
             exportServices();
 
             // Not only provider register
@@ -896,8 +899,10 @@ public class DubboBootstrap {
                 registerServiceInstance();
             }
 
+            // xjh-处理consumer的referenceConfig
             referServices();
             if (asyncExportingFutures.size() > 0) {
+                // xjh-异步发布服务
                 new Thread(() -> {
                     try {
                         this.awaitFinish();
@@ -1070,12 +1075,14 @@ public class DubboBootstrap {
     }
 
     private void exportServices() {
+        // xjh-从configManager中取出所有的ServiceConfigBase，即所有需要发布的接口
         configManager.getServices().forEach(sc -> {
             // TODO, compatible with ServiceConfig.export()
             ServiceConfig serviceConfig = (ServiceConfig) sc;
             serviceConfig.setBootstrap(this);
 
             if (exportAsync) {
+                // xjh-如果开启了异步模式，则启动线程池来发布服务
                 ExecutorService executor = executorRepository.getServiceExporterExecutor();
                 Future<?> future = executor.submit(() -> {
                     try {
@@ -1086,6 +1093,7 @@ public class DubboBootstrap {
                 });
                 asyncExportingFutures.add(future);
             } else {
+                // xjh-没有启动异步发布
                 exportService(serviceConfig);
             }
         });
@@ -1099,7 +1107,9 @@ public class DubboBootstrap {
                     sc.toString() + "]. Only one service can be exported for the same triple (group, interface, version), " +
                     "please modify the group or version if you really need to export multiple services of the same interface.");
         }
+        // xjh-发布
         sc.export();
+        // xjh-发布成功放入缓存
         exportedServices.put(sc.getServiceName(), sc);
     }
 
@@ -1119,10 +1129,12 @@ public class DubboBootstrap {
     }
 
     private void referServices() {
+        // xjh-初始化ReferenceConfigCache缓存
         if (cache == null) {
             cache = ReferenceConfigCache.getCache();
         }
 
+        // xjh-从configManager中取出所有的ReferenceConfigBase，即所有需要refer的接口
         configManager.getReferences().forEach(rc -> {
             // TODO, compatible with  ReferenceConfig.refer()
             ReferenceConfig referenceConfig = (ReferenceConfig) rc;

@@ -98,6 +98,7 @@ import static org.apache.dubbo.rpc.Constants.SCOPE_REMOTE;
 import static org.apache.dubbo.rpc.Constants.TOKEN_KEY;
 import static org.apache.dubbo.rpc.cluster.Constants.EXPORT_KEY;
 
+// xjh-与provider端需要发布的接口一一对应
 public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
     private static final long serialVersionUID = -412700146501624375L;
@@ -226,6 +227,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
             return;
         }
 
+        // xjh-是否延迟发布
         if (shouldDelay()) {
             DELAY_EXPORT_EXECUTOR.schedule(() -> {
                 try {
@@ -236,9 +238,11 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                 }
             }, getDelay(), TimeUnit.MILLISECONDS);
         } else {
+            // 发布
             doExport();
         }
 
+        // xjh-发布成功回调
         exported();
     }
 
@@ -320,6 +324,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
     private void doExportUrls() {
         ServiceRepository repository = ApplicationModel.getServiceRepository();
         ServiceDescriptor serviceDescriptor = repository.registerService(getInterfaceClass());
+        // xjh-将本身，即ServiceConfig缓存到ServiceRepository中
         repository.registerProvider(
                 getUniqueServiceName(),
                 ref,
@@ -328,20 +333,25 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                 serviceMetadata
         );
 
+        // xjh-加载注册中心url
+        // 如registry://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=dubbo-demo-annotation-provider&dubbo=2.0.2&id=registryConfig&pid=91794&registry=zookeeper&timestamp=1719799867750
         List<URL> registryURLs = ConfigValidationUtils.loadRegistries(this, true);
 
         int protocolConfigNum = protocols.size();
+        // xjh-遍历所有协议，对每个协议进行发布，默认只有一个协议，即dubbo
         for (ProtocolConfig protocolConfig : protocols) {
             String pathKey = URL.buildKey(getContextPath(protocolConfig)
                     .map(p -> p + "/" + path)
                     .orElse(path), group, version);
             // In case user specified path, register service one more time to map it to path.
             repository.registerService(pathKey, interfaceClass);
+            // xjh-发布
             doExportUrlsFor1Protocol(protocolConfig, registryURLs, protocolConfigNum);
         }
     }
 
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs, int protocolConfigNum) {
+        // xjh-获取协议
         String name = protocolConfig.getName();
         if (StringUtils.isEmpty(name)) {
             name = DUBBO;
@@ -350,6 +360,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         Map<String, String> map = new HashMap<String, String>();
         map.put(SIDE_KEY, PROVIDER_SIDE);
 
+        // xjh-将MetricsConfig、ApplicationConfig、ModuleConfig、ProviderConfig、ProtocolConfig等参数添加到map中
         ServiceConfig.appendRuntimeParameters(map);
         AbstractConfig.appendParameters(map, getMetrics());
         AbstractConfig.appendParameters(map, getApplication());
@@ -363,6 +374,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         if (metadataReportConfig != null && metadataReportConfig.isValid()) {
             map.putIfAbsent(METADATA_KEY, REMOTE_METADATA_STORAGE_TYPE);
         }
+        // xjh-解析方法名/方法参数等放入到map中
         if (CollectionUtils.isNotEmpty(getMethods())) {
             for (MethodConfig method : getMethods()) {
                 AbstractConfig.appendParameters(map, method, method.getName());
@@ -425,6 +437,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
             } // end of methods for
         }
 
+        // xjh-根据是否为泛化放置不同参数到map中
         if (ProtocolUtils.isGeneric(generic)) {
             map.put(GENERIC_KEY, generic);
             map.put(METHODS_KEY, ANY_VALUE);
@@ -446,6 +459,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         /**
          * Here the token value configured by the provider is used to assign the value to ServiceConfig#token
          */
+        // xjh-获取token配置，并添加到map中
         if (ConfigUtils.isEmpty(token) && provider != null) {
             token = provider.getToken();
         }
@@ -458,38 +472,46 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
             }
         }
         //init serviceMetadata attachments
+        // xjh-将attachments放入到map中
         serviceMetadata.getAttachments().putAll(map);
 
         // export service
         String host = findConfigedHosts(protocolConfig, registryURLs, map);
         Integer port = findConfigedPorts(protocolConfig, name, map, protocolConfigNum);
+        // xjh-将前面组装的map，host/port，协议等组装成url，最后url变成如下所示：
+        // dubbo://169.254.113.132:20880/org.apache.dubbo.demo.DemoService?anyhost=true&application=dubbo-demo-annotation-provider&bind.ip=169.254.113.132&bind.port=20880&deprecated=false&dubbo=2.0.2&dynamic=true&generic=false&interface=org.apache.dubbo.demo.DemoService&methods=sayHello,sayHelloAsync&pid=92029&release=&service.name=ServiceBean:/org.apache.dubbo.demo.DemoService&side=provider&timestamp=1719800496854
         URL url = new URL(name, host, port, getContextPath(protocolConfig).map(p -> p + "/" + path).orElse(path), map);
 
         // You can customize Configurator to append extra parameters
+        // xjh-这里可以通过ConfiguratorFactory来自定义一些参数
         if (ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class)
                 .hasExtension(url.getProtocol())) {
             url = ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class)
                     .getExtension(url.getProtocol()).getConfigurator(url).configure(url);
         }
 
+        // scope分为远程发布和本地发布，有三个参数可选：none/remote/local，none为不发布。默认为空，即会在本地和远程发布。
         String scope = url.getParameter(SCOPE_KEY);
         // don't export when none is configured
-        if (!SCOPE_NONE.equalsIgnoreCase(scope)) {
+        if (!SCOPE_NONE.equalsIgnoreCase(scope)) {  // 如果为none，则不发布
 
             // export to local if the config is not remote (export to remote only when config is remote)
-            if (!SCOPE_REMOTE.equalsIgnoreCase(scope)) {
+            if (!SCOPE_REMOTE.equalsIgnoreCase(scope)) {  // xjh-如果为local，则发布到本地
                 exportLocal(url);
             }
             // export to remote if the config is not local (export to local only when config is local)
-            if (!SCOPE_LOCAL.equalsIgnoreCase(scope)) {
+            if (!SCOPE_LOCAL.equalsIgnoreCase(scope)) {  // xjh-发布到remote
+                // xjh-如果注册中心url不为空
                 if (CollectionUtils.isNotEmpty(registryURLs)) {
+                    // xjh-遍历所有registryURLs，向每个注册中心发布服务
                     for (URL registryURL : registryURLs) {
+                        // xjh-向url中添加参数，如service-discovery-registry/dynamic/monitor/proxy
                         if (SERVICE_REGISTRY_PROTOCOL.equals(registryURL.getProtocol())) {
                             url = url.addParameterIfAbsent(SERVICE_NAME_MAPPING_KEY, "true");
                         }
 
                         //if protocol is only injvm ,not register
-                        if (LOCAL_PROTOCOL.equalsIgnoreCase(url.getProtocol())) {
+                        if (LOCAL_PROTOCOL.equalsIgnoreCase(url.getProtocol())) {  // xjh-如果协议为injvm，则退出远程发布
                             continue;
                         }
                         url = url.addParameterIfAbsent(DYNAMIC_KEY, registryURL.getParameter(DYNAMIC_KEY));
@@ -512,13 +534,18 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                             registryURL = registryURL.addParameter(PROXY_KEY, proxy);
                         }
 
+                        // xjh-生成代理invoker
                         Invoker<?> invoker = PROXY_FACTORY.getInvoker(ref, (Class) interfaceClass,
                                 registryURL.addParameterAndEncoded(EXPORT_KEY, url.toFullString()));
+                        // xjh-将invoker包装在DelegateProviderMetaDataInvoker中
                         DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
 
+                        // xjh-根据不同协议，对此invoker进行发布，如前文所示，我们这里注册中心的协议为register，所以Protocol子类为RegistryProtocol
                         Exporter<?> exporter = PROTOCOL.export(wrapperInvoker);
+                        // 放入缓存
                         exporters.add(exporter);
                     }
+                    // xjh-如果注册中心url为空，则只发布，consumer可以直连，不能在注册中心发现此provider
                 } else {
                     if (logger.isInfoEnabled()) {
                         logger.info("Export dubbo service " + interfaceClass.getName() + " to url " + url);
@@ -541,6 +568,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
      * always export injvm
      */
     private void exportLocal(URL url) {
+        // xjh-将协议替换成injvm，将host替换成127.0.0.1，将port替换成0
         URL local = URLBuilder.from(url)
                 .setProtocol(LOCAL_PROTOCOL)
                 .setHost(LOCALHOST_VALUE)
